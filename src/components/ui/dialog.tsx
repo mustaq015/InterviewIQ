@@ -10,14 +10,20 @@ interface DialogProps {
 const Dialog: React.FC<DialogProps> = ({ open = false, onOpenChange, children }) => {
   if (!open) return null;
   
+  const handleBackdropClick = () => {
+    onOpenChange?.(false);
+  };
+  
   return (
-    <>
+    <div className="fixed inset-0 z-50">
       <div
-        className="fixed inset-0 z-50 bg-black/80"
-        onClick={() => onOpenChange?.(false)}
+        className="absolute inset-0 bg-black/80"
+        onClick={handleBackdropClick}
       />
-      {children}
-    </>
+      <div className="absolute left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg">
+        {children}
+      </div>
+    </div>
   );
 };
 
@@ -26,16 +32,9 @@ const DialogContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   children,
   ...props
 }) => {
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    props.onClick?.(e);
-  };
-  
   return (
-    <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg">
-      <div className={cn('relative', className)} {...props} onClick={handleClick}>
-        {children}
-      </div>
+    <div className={cn('relative', className)} {...props}>
+      {children}
     </div>
   );
 };

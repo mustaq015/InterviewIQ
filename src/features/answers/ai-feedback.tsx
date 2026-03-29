@@ -6,12 +6,14 @@ import { useLocalStorage } from '../../hooks';
 interface AIConfig {
   apiKey: string;
   model: string;
+  provider: 'openai' | 'groq';
 }
 
 export function AISettings() {
   const [config, setConfig] = useLocalStorage<AIConfig>('ai-config', {
     apiKey: '',
-    model: 'gpt-3.5-turbo',
+    model: 'llama-3.1-70b-versatile',
+    provider: 'groq',
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState(config);
@@ -43,11 +45,11 @@ export function AISettings() {
         {hasApiKey ? (
           <div className="flex items-center gap-2 text-sm text-green-500">
             <Sparkles className="h-4 w-4" />
-            AI features enabled
+            AI features enabled ({config.provider === 'groq' ? 'Groq (Free)' : 'OpenAI'})
           </div>
         ) : (
           <div className="text-sm text-muted-foreground">
-            Configure your OpenAI API key to enable AI features
+            Configure your API key to enable AI features
           </div>
         )}
       </CardContent>
@@ -60,24 +62,36 @@ export function AISettings() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="apiKey">OpenAI API Key</Label>
+                <Label htmlFor="provider">Provider</Label>
+                <select
+                  id="provider"
+                  value={formData.provider}
+                  onChange={(e) => setFormData({ ...formData, provider: e.target.value as AIConfig['provider'], model: e.target.value === 'groq' ? 'llama-3.1-70b-versatile' : 'gpt-4o-mini' })}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="groq">Groq (Free - Recommended)</option>
+                  <option value="openai">OpenAI (Paid)</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">{formData.provider === 'groq' ? 'Groq' : 'OpenAI'} API Key</Label>
                 <Input
                   id="apiKey"
                   type="password"
                   value={formData.apiKey}
                   onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                  placeholder="sk-..."
+                  placeholder={formData.provider === 'groq' ? 'gsk_...' : 'sk-...'}
                   required
                 />
                 <p className="text-xs text-muted-foreground">
                   Get your API key from{' '}
                   <a 
-                    href="https://platform.openai.com/api-keys" 
+                    href={formData.provider === 'groq' ? 'https://console.groq.com/keys' : 'https://platform.openai.com/api-keys'} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-primary hover:underline"
                   >
-                    OpenAI Platform
+                    {formData.provider === 'groq' ? 'Groq Console' : 'OpenAI Platform'}
                   </a>
                 </p>
               </div>
@@ -89,9 +103,19 @@ export function AISettings() {
                   onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                  <option value="gpt-4">GPT-4</option>
-                  <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                  {formData.provider === 'groq' ? (
+                    <>
+                      <option value="llama-3.1-70b-versatile">Llama 3.1 70B (Best Quality)</option>
+                      <option value="llama-3.1-8b-instant">Llama 3.1 8B (Faster)</option>
+                      <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="gpt-4o-mini">GPT-4o Mini</option>
+                      <option value="gpt-4o">GPT-4o</option>
+                      <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>
@@ -119,7 +143,8 @@ interface AIFeedbackProps {
 export function AIFeedback({ question, answer, onApply }: AIFeedbackProps) {
   const [config] = useLocalStorage<AIConfig>('ai-config', {
     apiKey: '',
-    model: 'gpt-3.5-turbo',
+    model: 'llama-3.1-70b-versatile',
+    provider: 'groq',
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -127,6 +152,12 @@ export function AIFeedback({ question, answer, onApply }: AIFeedbackProps) {
   const [improvedAnswer, setImprovedAnswer] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const getEndpoint = () => {
+    return config.provider === 'groq' 
+      ? 'https://api.groq.com/openai/v1/chat/completions'
+      : 'https://api.openai.com/v1/chat/completions';
+  };
 
   const getFeedback = async () => {
     if (!config.apiKey) {
@@ -138,7 +169,7 @@ export function AIFeedback({ question, answer, onApply }: AIFeedbackProps) {
     setError(null);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(getEndpoint(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +216,7 @@ export function AIFeedback({ question, answer, onApply }: AIFeedbackProps) {
     setError(null);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(getEndpoint(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

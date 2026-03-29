@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] {
-  const [storedValue, setStoredValue] = useState<T>(() => {
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      if (item) {
+        setStoredValue(JSON.parse(item));
+      }
     } catch {
-      return initialValue;
+      console.error('Error reading from localStorage');
     }
-  });
+    setIsHydrated(true);
+  }, [key]);
 
   const setValue = (value: T | ((prev: T) => T)) => {
     try {
@@ -20,7 +26,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
     }
   };
 
-  return [storedValue, setValue];
+  return [isHydrated ? storedValue : initialValue, setValue];
 }
 
 export function useDebounce<T>(value: T, delay: number): T {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '../../components/ui';
 import { Button } from '../../components/ui';
 import { Input, Textarea } from '../../components/ui';
@@ -38,7 +38,12 @@ import {
   Save,
   X,
   BookOpen,
-  User
+  User,
+  Timer,
+  Play,
+  Square,
+  Trophy,
+  Target
 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import type { Difficulty } from '../../types';
@@ -51,6 +56,13 @@ interface CustomQuestion extends Omit<InterviewQuestion, 'difficulty'> {
 interface SavedQuestion {
   topicId: string;
   questionId: string;
+}
+
+interface QuestionTimeData {
+  best: number;
+  last: number;
+  attempts: number;
+  expectedTime: number;
 }
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -75,6 +87,7 @@ interface QuestionFormData {
   tips: string;
   difficulty: Difficulty;
   company: string;
+  expectedTime: number;
 }
 
 interface TopicFormData {
@@ -94,14 +107,6 @@ interface ExtendedTopic {
   description: string;
   questions: (InterviewQuestion & { isCustom?: boolean })[];
   isCustom: boolean;
-}
-
-interface QuestionFormData {
-  question: string;
-  answer: string;
-  tips: string;
-  difficulty: Difficulty;
-  company: string;
 }
 
 interface TopicFormData {
@@ -136,7 +141,8 @@ const defaultFormData: QuestionFormData = {
   answer: '',
   tips: '',
   difficulty: 'medium',
-  company: ''
+  company: '',
+  expectedTime: 120
 };
 
 const defaultTopicFormData: TopicFormData = {
@@ -163,13 +169,6 @@ const colorOptions = [
 ];
 
 export function InterviewHub() {
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('custom-answers');
-      localStorage.removeItem('custom-interview-questions');
-    }
-  }, []);
-  
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [cameFromSearch, setCameFromSearch] = useState(false);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
@@ -183,6 +182,15 @@ export function InterviewHub() {
   const [customAnswers, setCustomAnswers] = useLocalStorage<Record<string, { answer: string; tips: string[] }>>('custom-answers', {});
   const [customTopics, setCustomTopics] = useLocalStorage<CustomTopic[]>('custom-topics', []);
   const [hiddenTopics, setHiddenTopics] = useLocalStorage<string[]>('hidden-topics', []);
+  const [hiddenQuestions, setHiddenQuestions] = useLocalStorage<string[]>('hidden-questions', []);
+  const [questionTimes, setQuestionTimes] = useLocalStorage<Record<string, QuestionTimeData>>('interviewhub_question_times', {});
+  
+  const [activeTimer, setActiveTimer] = useState<{ questionId: string; startTime: number } | null>(null);
+  const [timerDisplay, setTimerDisplay] = useState(0);
+  const timerIntervalRef = useRef<number | null>(null);
+  const [editingExpectedTime, setEditingExpectedTime] = useState(false);
+  const [tempExpectedTime, setTempExpectedTime] = useState(60);
+  
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<{ id: string; data: CustomQuestion } | null>(null);
   const [formData, setFormData] = useState<QuestionFormData>(defaultFormData);
@@ -195,6 +203,102 @@ export function InterviewHub() {
   const [isPredefinedEditOpen, setIsPredefinedEditOpen] = useState(false);
   const [predefinedEditData, setPredefinedEditData] = useState<{ question: string; answer: string; tips: string }>({ question: '', answer: '', tips: '' });
   const [editingPredefinedId, setEditingPredefinedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('custom-answers');
+      localStorage.removeItem('custom-interview-questions');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTimer) {
+      timerIntervalRef.current = window.setInterval(() => {
+        const elapsed = Math.floor((Date.now() - activeTimer.startTime) / 1000);
+        setTimerDisplay(elapsed);
+      }, 1000);
+    } else {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      setTimerDisplay(0);
+    }
+    
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, [activeTimer]);
+
+  const formatTimeDisplay = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  const getTimeColor = (actual: number, expected: number) => {
+    const ratio = expected > 0 ? actual / expected : 1;
+    if (ratio <= 0.8) return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-600 dark:text-green-400', border: 'border-green-500', label: 'Excellent!' };
+    if (ratio <= 1.0) return { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500', label: 'Good' };
+    if (ratio <= 1.5) return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-600 dark:text-yellow-400', border: 'border-yellow-500', label: 'Slow' };
+    return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', border: 'border-red-500', label: 'Too Slow' };
+  };
+  
+  const getActiveQuestionTimeData = () => {
+    if (!activeTimer) return null;
+    return questionTimes[activeTimer.questionId] || null;
+  };
+
+  const stopTimer = () => {
+    if (!activeTimer) return;
+    
+    const elapsed = Math.floor((Date.now() - activeTimer.startTime) / 1000);
+    const existing = questionTimes[activeTimer.questionId] || { best: Infinity, last: 0, attempts: 0, expectedTime: 60 };
+    const bestTime = Math.min(existing.best, elapsed);
+    
+    setQuestionTimes(prev => ({
+      ...prev,
+      [activeTimer.questionId]: {
+        best: bestTime,
+        last: elapsed,
+        attempts: (existing.attempts || 0) + 1,
+        expectedTime: existing.expectedTime
+      }
+    }));
+    
+    setActiveTimer(null);
+  };
+  
+  const handleUpdateExpectedTime = () => {
+    if (!activeTimer) return;
+    const newExpected = Math.max(10, Math.min(600, tempExpectedTime));
+    setQuestionTimes(prev => {
+      const existing = prev[activeTimer.questionId] || { best: Infinity, last: 0, attempts: 0 };
+      return {
+        ...prev,
+        [activeTimer.questionId]: {
+          ...existing,
+          expectedTime: newExpected
+        }
+      };
+    });
+    setEditingExpectedTime(false);
+  };
+  
+  const startTimer = (questionId: string, expectedTime: number) => {
+    if (activeTimer?.questionId === questionId) {
+      stopTimer();
+    } else {
+      const newTimeData: QuestionTimeData = questionTimes[questionId] || { best: Infinity, last: 0, attempts: 0, expectedTime };
+      setQuestionTimes(prev => ({
+        ...prev,
+        [questionId]: { ...newTimeData, expectedTime }
+      }));
+      setActiveTimer({ questionId, startTime: Date.now() });
+    }
+  };
 
   const toggleExpanded = (id: string) => {
     setExpandedQuestions(prev => {
@@ -238,15 +342,18 @@ export function InterviewHub() {
     
     const predefinedIds = new Set(predefined.map(q => q.id));
     
-    const mergedQuestions = predefined.map(q => {
-      const customAnswer = customAnswers[`${topicId}:${q.id}`];
-      if (customAnswer) {
-        return { ...q, answer: customAnswer.answer, tips: customAnswer.tips };
-      }
-      return q;
-    });
+    const mergedQuestions = predefined
+      .filter(q => !hiddenQuestions.includes(q.id))
+      .map(q => {
+        const customAnswer = customAnswers[`${topicId}:${q.id}`];
+        if (customAnswer) {
+          return { ...q, answer: customAnswer.answer, tips: customAnswer.tips };
+        }
+        return q;
+      });
     
-    const newCustomQuestions = custom.filter(q => !predefinedIds.has(q.id));
+    const newCustomQuestions = custom
+      .filter(q => !predefinedIds.has(q.id) && !hiddenQuestions.includes(q.id));
     
     return [...mergedQuestions, ...newCustomQuestions.map(q => ({ ...q, isCustom: true }))];
   };
@@ -262,12 +369,15 @@ export function InterviewHub() {
   };
 
   const handleOpenEditForm = (q: InterviewQuestion) => {
+    const timeData = questionTimes[q.id];
+    const defaultExpected = q.difficulty === 'easy' ? 60 : q.difficulty === 'medium' ? 120 : 180;
     setFormData({
       question: q.question,
       answer: q.answer || '',
       tips: q.tips?.join('\n') || '',
       difficulty: q.difficulty,
-      company: q.company || ''
+      company: q.company || '',
+      expectedTime: timeData?.expectedTime || defaultExpected
     });
     setEditingQuestion({ id: q.id, data: q as CustomQuestion });
     setIsFormOpen(true);
@@ -304,6 +414,12 @@ export function InterviewHub() {
         ...prev,
         [selectedTopic]: [...(prev[selectedTopic] || []), newQuestion]
       }));
+      
+      const newQuestionId = `custom-${Date.now()}`;
+      setQuestionTimes(prev => ({
+        ...prev,
+        [newQuestionId]: { best: Infinity, last: 0, attempts: 0, expectedTime: formData.expectedTime }
+      }));
     }
     
     setIsFormOpen(false);
@@ -318,6 +434,21 @@ export function InterviewHub() {
       ...prev,
       [selectedTopic]: prev[selectedTopic].filter(q => q.id !== questionId)
     }));
+    
+    setQuestionTimes(prev => {
+      const newTimes = { ...prev };
+      delete newTimes[questionId];
+      return newTimes;
+    });
+  };
+
+  const handleHideQuestion = (questionId: string) => {
+    if (!confirm('Hide this question?')) return;
+    setHiddenQuestions(prev => [...prev, questionId]);
+  };
+
+  const handleRestoreHidden = () => {
+    setHiddenQuestions([]);
   };
 
   const handleOpenEditAnswer = (question: InterviewQuestion & { isCustom?: boolean }, topicId: string) => {
@@ -776,6 +907,75 @@ export function InterviewHub() {
       )}
 
       {selectedTopic && !searchTerm && (
+        <div className="space-y-4">
+          {activeTimer && (
+            <Card className={`border-2 ${getTimeColor(timerDisplay, getActiveQuestionTimeData()?.expectedTime || 60).border}`}>
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Timer className="h-5 w-5 text-primary" />
+                      <span className="text-sm font-medium">Practice Timer</span>
+                    </div>
+                    <div className={`text-3xl font-bold font-mono ${getTimeColor(timerDisplay, getActiveQuestionTimeData()?.expectedTime || 60).text}`}>
+                      {formatTimeDisplay(timerDisplay)}
+                    </div>
+                    <Badge variant="outline" className="gap-1">
+                      <Target className="h-3 w-3" />
+                      Expected: {formatTimeDisplay(getActiveQuestionTimeData()?.expectedTime || 60)}
+                      {editingExpectedTime ? (
+                        <div className="flex items-center ml-2">
+                          <Input
+                            type="number"
+                            value={tempExpectedTime}
+                            onChange={(e) => setTempExpectedTime(parseInt(e.target.value) || 60)}
+                            className="w-16 h-6 text-xs px-1"
+                            min={10}
+                            max={600}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleUpdateExpectedTime();
+                              if (e.key === 'Escape') setEditingExpectedTime(false);
+                            }}
+                          />
+                          <Button size="sm" className="h-6 px-2 ml-1" onClick={handleUpdateExpectedTime}>OK</Button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setTempExpectedTime(getActiveQuestionTimeData()?.expectedTime || 60);
+                            setEditingExpectedTime(true);
+                          }}
+                          className="ml-1 hover:text-primary"
+                          title="Edit Expected Time"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={stopTimer}
+                      className="gap-1"
+                    >
+                      <Square className="h-4 w-4" />
+                      Stop & Save
+                    </Button>
+                  </div>
+                </div>
+                <div className={`mt-2 text-sm ${getTimeColor(timerDisplay, getActiveQuestionTimeData()?.expectedTime || 60).text}`}>
+                  {getTimeColor(timerDisplay, getActiveQuestionTimeData()?.expectedTime || 60).label}
+                  {timerDisplay > 0 && getActiveQuestionTimeData()?.best !== Infinity && (
+                    <span className="ml-2">
+                      | Best: <span className="font-semibold">{formatTimeDisplay(getActiveQuestionTimeData()?.best || 0)}</span>
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         <Card>
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -840,6 +1040,17 @@ export function InterviewHub() {
                 <Plus className="h-4 w-4 mr-1" />
                 Add Question
               </Button>
+              {hiddenQuestions.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRestoreHidden}
+                  className="text-muted-foreground"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Restore ({hiddenQuestions.length})
+                </Button>
+              )}
             </div>
           </CardHeader>
           
@@ -891,12 +1102,20 @@ export function InterviewHub() {
                             Reviewed
                           </span>
                         )}
+                        {questionTimes[q.id] && questionTimes[q.id].attempts > 0 && (
+                          <div className="flex items-center gap-1 ml-2">
+                            <Trophy className="h-3 w-3 text-yellow-500" />
+                            <span className={`text-xs font-semibold ${getTimeColor(questionTimes[q.id].best, questionTimes[q.id].expectedTime).text}`}>
+                              {formatTimeDisplay(questionTimes[q.id].best)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <p className="mt-2 font-medium">{q.question}</p>
                     </div>
                     
-                    <div className="flex items-center gap-1">
-                      {q.isCustom ? (
+                      <div className="flex items-center gap-1">
+                        {q.isCustom ? (
                         <>
                           <button
                             onClick={(e) => {
@@ -920,16 +1139,28 @@ export function InterviewHub() {
                           </button>
                         </>
                       ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenPredefinedEdit(q, selectedTopic);
-                          }}
-                          className="p-2 hover:bg-secondary rounded text-blue-600"
-                          title="Edit Question & Answer"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenPredefinedEdit(q, selectedTopic);
+                            }}
+                            className="p-2 hover:bg-secondary rounded text-blue-600"
+                            title="Edit Question & Answer"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleHideQuestion(q.id);
+                            }}
+                            className="p-2 hover:bg-secondary rounded text-muted-foreground"
+                            title="Hide Question"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
                       )}
                       <button
                         onClick={(e) => {
@@ -943,6 +1174,22 @@ export function InterviewHub() {
                           <BookmarkCheck className="h-4 w-4 text-primary" />
                         ) : (
                           <Bookmark className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const timeData = questionTimes[q.id];
+                          const expectedTime = timeData?.expectedTime || (q.difficulty === 'easy' ? 60 : q.difficulty === 'medium' ? 120 : 180);
+                          startTimer(q.id, expectedTime);
+                        }}
+                        className={`p-2 hover:bg-secondary rounded ${activeTimer?.questionId === q.id ? 'bg-primary/10 text-primary' : ''}`}
+                        title="Start Practice Timer"
+                      >
+                        {activeTimer?.questionId === q.id ? (
+                          <Square className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
                         )}
                       </button>
                       <button
@@ -1060,6 +1307,7 @@ export function InterviewHub() {
             )}
           </CardContent>
         </Card>
+        </div>
       )}
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -1095,7 +1343,7 @@ export function InterviewHub() {
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Difficulty</label>
                 <select
@@ -1107,6 +1355,17 @@ export function InterviewHub() {
                   <option value="medium">Medium</option>
                   <option value="hard">Hard</option>
                 </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Expected Time (sec)</label>
+                <Input
+                  type="number"
+                  value={formData.expectedTime}
+                  onChange={(e) => setFormData({ ...formData, expectedTime: parseInt(e.target.value) || 60 })}
+                  placeholder="e.g., 120"
+                  min={10}
+                  max={600}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Company (optional)</label>

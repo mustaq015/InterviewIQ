@@ -8,7 +8,7 @@ import { useLocalStorage } from '../../hooks';
 import type { QuestionCategory, Difficulty } from '../../types';
 
 interface AIConfig {
-  provider: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
+  provider: 'openai' | 'anthropic' | 'google' | 'azure' | 'groq' | 'custom';
   apiKey: string;
   model: string;
   customEndpoint?: string;
@@ -291,6 +291,29 @@ export function QAView() {
           const customData = await response.json();
           if (!response.ok) throw new Error(customData.error?.message || 'Failed to generate');
           result = customData.choices?.[0]?.message?.content || customData.content || JSON.stringify(customData);
+          break;
+        }
+
+        case 'groq': {
+          response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${aiConfig.apiKey}`,
+            },
+            body: JSON.stringify({
+              model: aiConfig.model || 'llama-3.1-70b-versatile',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+              ],
+              temperature: 0.7,
+              max_tokens: 500,
+            }),
+          });
+          const groqData = await response.json();
+          if (!response.ok) throw new Error(groqData.error?.message || 'Failed to generate');
+          result = groqData.choices[0].message.content;
           break;
         }
 
@@ -606,6 +629,7 @@ export function QAView() {
                 <option value="anthropic">Anthropic Claude</option>
                 <option value="google">Google Gemini</option>
                 <option value="azure">Azure OpenAI</option>
+                <option value="groq">Groq (Free)</option>
                 <option value="custom">Custom / Other</option>
               </select>
             </div>
@@ -624,7 +648,7 @@ export function QAView() {
               <Input
                 value={settingsForm.model}
                 onChange={(e) => setSettingsForm({ ...settingsForm, model: e.target.value })}
-                placeholder={settingsForm.provider === 'openai' ? 'gpt-4o-mini' : settingsForm.provider === 'anthropic' ? 'claude-3-5-haiku-20241022' : settingsForm.provider === 'google' ? 'gemini-1.5-flash' : 'model-name'}
+                placeholder={settingsForm.provider === 'openai' ? 'gpt-4o-mini' : settingsForm.provider === 'anthropic' ? 'claude-3-5-haiku-20241022' : settingsForm.provider === 'google' ? 'gemini-1.5-flash' : settingsForm.provider === 'groq' ? 'llama-3.1-70b-versatile' : 'model-name'}
                 className="text-xs h-8"
               />
             </div>

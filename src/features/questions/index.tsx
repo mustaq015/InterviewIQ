@@ -29,6 +29,7 @@ const difficultyColors: Record<Difficulty, string> = {
 interface AIConfig {
   apiKey: string;
   model: string;
+  provider: 'openai' | 'groq';
 }
 
 export function Questions() {
@@ -41,7 +42,7 @@ export function Questions() {
   const [filterDifficulty, setFilterDifficulty] = useState<string>('');
   const [filterCompany, setFilterCompany] = useState<string>('');
   
-  const [aiConfig] = useLocalStorage<AIConfig>('ai-config', { apiKey: '', model: 'gpt-3.5-turbo' });
+  const [aiConfig] = useLocalStorage<AIConfig>('ai-config', { apiKey: '', model: 'llama-3.1-70b-versatile', provider: 'groq' });
   const [aiPrompt, setAiPrompt] = useState('');
   const [generatedQuestions, setGeneratedQuestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -128,7 +129,11 @@ export function Questions() {
     setAiError(null);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const endpoint = aiConfig.provider === 'groq' 
+        ? 'https://api.groq.com/openai/v1/chat/completions'
+        : 'https://api.openai.com/v1/chat/completions';
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

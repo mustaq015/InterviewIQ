@@ -1,14 +1,37 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Textarea, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Badge } from '../../components/ui';
 import { 
   Plus, Pencil, Trash2, X, Copy, Check, Code, FileCode, Sun, Moon,
   Download, Printer, Braces, Sparkles, ChevronDown, Briefcase, GraduationCap,
-  Wrench, FileText as FileTextIcon
+  Wrench, FileText as FileTextIcon, GripVertical, User, Save, MessageSquare
 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import type { Profile, Experience, Education } from '../../types';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+function SortableItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 'auto',
+  };
+  
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <div className="absolute left-2 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing z-10" {...attributes} {...listeners}>
+        <GripVertical className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
+      </div>
+      <div className="pl-8">{children}</div>
+    </div>
+  );
+}
 
 interface ITSkill {
   id: string;
@@ -25,6 +48,15 @@ interface Project {
   technologies: string[];
   duration: string;
   responsibilities: string[];
+}
+
+interface SelfIntro {
+  id: string;
+  title: string;
+  content: string;
+  tips: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 type PaperSize = 'A4' | 'Letter' | 'Legal';
@@ -119,7 +151,7 @@ ${exp.description}
 `).join('\n')}
 
 ## Projects
-${profile.projects.map(proj => `
+${profile.projects.slice(0, 2).map(proj => `
 ### ${proj.title}
 **${proj.duration}** | Technologies: ${proj.technologies.join(', ')}
 
@@ -147,7 +179,7 @@ export function Profile() {
   const [showResumeMenu, setShowResumeMenu] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [newResumeName, setNewResumeName] = useState('');
-  const [activeSection, setActiveSection] = useState<'editor' | 'preview' | 'experience' | 'education' | 'skills' | 'projects'>('editor');
+  const [activeSection, setActiveSection] = useState<'editor' | 'preview' | 'experience' | 'education' | 'skills' | 'projects' | 'self-intro'>('editor');
   const [editorTheme, setEditorTheme] = useState<'light' | 'dark'>('light');
   const [copied, setCopied] = useState(false);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
@@ -155,6 +187,65 @@ export function Profile() {
   const [showSizeMenu, setShowSizeMenu] = useState(false);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  
+  const [selfIntros, setSelfIntros] = useLocalStorage<SelfIntro[]>('self-introductions', []);
+  const [isIntroDialogOpen, setIsIntroDialogOpen] = useState(false);
+  const [editingIntro, setEditingIntro] = useState<SelfIntro | null>(null);
+  const [introForm, setIntroForm] = useState({ title: '', content: '', tips: '' });
+  const [viewingIntro, setViewingIntro] = useState<SelfIntro | null>(null);
+  const [copiedIntro, setCopiedIntro] = useState(false);
+
+  useEffect(() => {
+    setResumeCode(getDefaultResumeCode(profile));
+  }, [profile.experience, profile.education, profile.skills, profile.projects, profile.name, profile.email, profile.phone, profile.currentLocation, profile.linkedin, profile.objective, profile.languages, profile.summary]);
+
+  const handleSaveIntro = () => {
+    if (!introForm.title.trim()) return;
+    if (editingIntro) {
+      setSelfIntros(selfIntros.map(i => 
+        i.id === editingIntro.id 
+          ? { ...i, title: introForm.title, content: introForm.content, tips: introForm.tips, updatedAt: new Date() }
+          : i
+      ));
+    } else {
+      const newIntro: SelfIntro = {
+        id: `self-intro-${Date.now()}`,
+        title: introForm.title,
+        content: introForm.content,
+        tips: introForm.tips,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      setSelfIntros([newIntro, ...selfIntros]);
+    }
+    setIsIntroDialogOpen(false);
+    setEditingIntro(null);
+    setIntroForm({ title: '', content: '', tips: '' });
+  };
+
+  const handleDeleteIntro = (id: string) => {
+    if (confirm('Delete this self-introduction?')) {
+      setSelfIntros(selfIntros.filter(i => i.id !== id));
+    }
+  };
+
+  const handleCopyIntro = (intro: SelfIntro) => {
+    navigator.clipboard.writeText(intro.content);
+    setCopiedIntro(true);
+    setTimeout(() => setCopiedIntro(false), 2000);
+  };
+
+  const openEditIntro = (intro: SelfIntro) => {
+    setEditingIntro(intro);
+    setIntroForm({ title: intro.title, content: intro.content, tips: intro.tips || '' });
+    setIsIntroDialogOpen(true);
+  };
+
+  const openNewIntro = () => {
+    setEditingIntro(null);
+    setIntroForm({ title: '', content: '', tips: '' });
+    setIsIntroDialogOpen(true);
+  };
 
   const saveCurrentResume = (name: string) => {
     const newResume: SavedResume = {
@@ -730,6 +821,7 @@ export function Profile() {
     { key: 'education' as const, label: 'Education', icon: <GraduationCap className="h-4 w-4" /> },
     { key: 'skills' as const, label: 'Skills', icon: <Wrench className="h-4 w-4" /> },
     { key: 'projects' as const, label: 'Projects', icon: <FileTextIcon className="h-4 w-4" /> },
+    { key: 'self-intro' as const, label: 'Self Intro', icon: <MessageSquare className="h-4 w-4" /> },
   ];
 
   return (
@@ -864,6 +956,52 @@ export function Profile() {
         </DialogContent>
       </Dialog>
 
+      {/* Self Introduction Dialog */}
+      <Dialog open={isIntroDialogOpen} onOpenChange={(open) => { if (!open) { setIsIntroDialogOpen(false); setEditingIntro(null); setIntroForm({ title: '', content: '', tips: '' }); } }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingIntro ? 'Edit Self Introduction' : 'Create Self Introduction'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium">Title</label>
+              <Input
+                value={introForm.title}
+                onChange={(e) => setIntroForm({ ...introForm, title: e.target.value })}
+                placeholder="e.g., 2-Minute Elevator Pitch, Technical Round Intro"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Content</label>
+              <Textarea
+                value={introForm.content}
+                onChange={(e) => setIntroForm({ ...introForm, content: e.target.value })}
+                placeholder="Write your self-introduction content here..."
+                className="min-h-[200px] font-mono text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Tips (optional)</label>
+              <Textarea
+                value={introForm.tips}
+                onChange={(e) => setIntroForm({ ...introForm, tips: e.target.value })}
+                placeholder="Add key points or tips to remember...&#10;&#10;e.g.:&#10;- Mention years of experience&#10;- Highlight current project&#10;- Mention specific technologies"
+                className="min-h-[100px] text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsIntroDialogOpen(false); setEditingIntro(null); setIntroForm({ title: '', content: '', tips: '' }); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveIntro} disabled={!introForm.title.trim()}>
+              <Save className="mr-2 h-4 w-4" />
+              {editingIntro ? 'Update' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Navigation Tabs */}
       <Card>
         <CardContent className="p-2">
@@ -950,6 +1088,78 @@ export function Profile() {
           </Card>
         )}
 
+        {/* Self Introduction Manager */}
+        {activeSection === 'self-intro' && (
+          <Card className="h-[calc(100vh-220px)] overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between py-4 border-b bg-muted/30">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Self Introductions
+              </CardTitle>
+              <Button size="sm" onClick={openNewIntro}>
+                <Plus className="h-4 w-4 mr-1" /> Add File
+              </Button>
+            </CardHeader>
+            <CardContent className="h-[calc(100%-80px)] overflow-auto p-6">
+              {selfIntros.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No files added yet</p>
+                  <p className="text-sm mt-1">Add your self-introduction files with tips</p>
+                  <Button variant="outline" size="sm" onClick={openNewIntro} className="mt-4">
+                    <Plus className="h-4 w-4 mr-1" /> Add Your First File
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {selfIntros.map((intro) => (
+                    <div key={intro.id} className="p-4 rounded-lg bg-muted relative hover:bg-muted/80 transition-colors border">
+                      <div className="absolute top-4 right-4 flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCopyIntro(intro)} title="Copy">
+                          {copiedIntro && viewingIntro?.id === intro.id ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditIntro(intro)} title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteIntro(intro.id)} title="Delete">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <h3 className="font-semibold text-lg pr-20">{intro.title}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Updated: {new Date(intro.updatedAt).toLocaleDateString()}
+                      </p>
+                      <div className="mt-3 flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setViewingIntro(viewingIntro?.id === intro.id ? null : intro)}>
+                          {viewingIntro?.id === intro.id ? 'Hide' : 'View'}
+                        </Button>
+                        {intro.tips && (
+                          <Badge variant="secondary" className="text-xs">
+                            Tips available
+                          </Badge>
+                        )}
+                      </div>
+                      {viewingIntro?.id === intro.id && (
+                        <div className="mt-3 space-y-3">
+                          <div className="p-3 bg-background rounded-md border text-sm whitespace-pre-wrap max-h-[200px] overflow-auto">
+                            {intro.content}
+                          </div>
+                          {intro.tips && (
+                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
+                              <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-1">Tips:</p>
+                              <p className="text-sm whitespace-pre-wrap">{intro.tips}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Full Preview - Same size as other tabs */}
         {activeSection === 'preview' && (
           <Card className="h-[calc(100vh-220px)] overflow-hidden">
@@ -1001,6 +1211,20 @@ function ExperienceManager({ profile, setProfile }: { profile: typeof defaultPro
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [form, setForm] = useState({ company: '', role: '', startDate: '', endDate: '', current: false, description: '', location: '' });
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = profile.experience.findIndex(e => e.id === active.id);
+      const newIndex = profile.experience.findIndex(e => e.id === over.id);
+      setProfile(p => ({ ...p, experience: arrayMove(p.experience, oldIndex, newIndex) as Experience[] }));
+    }
+  };
+
   const openAdd = () => { setForm({ company: '', role: '', startDate: '', endDate: '', current: false, description: '', location: '' }); setEditingIdx(null); setIsOpen(true); };
   const openEdit = (idx: number) => { const exp = profile.experience[idx]; setForm({ company: exp.company, role: exp.role, startDate: exp.startDate, endDate: exp.endDate, current: exp.current, description: exp.description, location: exp.location || '' }); setEditingIdx(idx); setIsOpen(true); };
   const save = () => {
@@ -1015,33 +1239,39 @@ function ExperienceManager({ profile, setProfile }: { profile: typeof defaultPro
   return (
     <>
       <CardHeader className="flex flex-row items-center justify-between py-4 border-b bg-muted/30">
-        <CardTitle className="text-xl">Experience</CardTitle>
+        <CardTitle className="text-xl">Experience <span className="text-sm font-normal text-muted-foreground">(drag to reorder)</span></CardTitle>
         <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Add Experience</Button>
       </CardHeader>
       <CardContent className="h-[calc(100%-80px)] overflow-auto p-6">
-        <div className="space-y-4">
-          {profile.experience.map((exp, idx) => (
-            <div key={exp.id} className="p-4 rounded-lg bg-muted relative hover:bg-muted/80 transition-colors">
-              <div className="absolute top-4 right-4 flex gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(idx)}><Pencil className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setProfile((p) => ({ ...p, experience: p.experience.filter((_, i) => i !== idx) }))}><Trash2 className="h-4 w-4" /></Button>
-              </div>
-              <p className="font-semibold text-lg">{exp.role}</p>
-              <p className="text-primary font-medium">{exp.company}</p>
-              <p className="text-sm text-muted-foreground">{exp.startDate} - {exp.current ? 'Present' : exp.endDate}{exp.location ? ` • ${exp.location}` : ''}</p>
-              {exp.description && <p className="mt-2 text-sm">{exp.description}</p>}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={profile.experience.map(e => e.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4">
+              {profile.experience.map((exp, idx) => (
+                <SortableItem key={exp.id} id={exp.id}>
+                  <div className="p-4 rounded-lg bg-muted relative hover:bg-muted/80 transition-colors">
+                    <div className="absolute top-4 right-4 flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(idx)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setProfile((p) => ({ ...p, experience: p.experience.filter((_, i) => i !== idx) }))}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                    <p className="font-semibold text-lg">{exp.role}</p>
+                    <p className="text-primary font-medium">{exp.company}</p>
+                    <p className="text-sm text-muted-foreground">{exp.startDate} - {exp.current ? 'Present' : exp.endDate}{exp.location ? ` • ${exp.location}` : ''}</p>
+                    {exp.description && <p className="mt-2 text-sm">{exp.description}</p>}
+                  </div>
+                </SortableItem>
+              ))}
+              {profile.experience.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No experience added yet</p>
+                  <Button variant="outline" size="sm" onClick={openAdd} className="mt-4">
+                    <Plus className="h-4 w-4 mr-1" /> Add Your First Experience
+                  </Button>
+                </div>
+              )}
             </div>
-          ))}
-          {profile.experience.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No experience added yet</p>
-              <Button variant="outline" size="sm" onClick={openAdd} className="mt-4">
-                <Plus className="h-4 w-4 mr-1" /> Add Your First Experience
-              </Button>
-            </div>
-          )}
-        </div>
+          </SortableContext>
+        </DndContext>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogContent>
