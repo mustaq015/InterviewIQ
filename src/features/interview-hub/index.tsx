@@ -558,7 +558,7 @@ ${intros[0].content || 'Not set'}`;
           messages: [
             {
               role: 'system',
-              content: `You are a friendly, experienced mentor helping someone prepare for their job interview. You speak in a natural, conversational tone - like a helpful friend who's been through many interviews. Avoid corporate jargon and robotic phrases. Make answers sound genuine, relatable, and human. Use simple words. Be direct and honest.`
+              content: `You are a friendly, experienced mentor helping someone prepare for their job interview. You speak in a natural, conversational tone - like a helpful friend who's been through many interviews. Keep answers SHORT, direct, and memorable. Use bullet points for clarity. Avoid corporate jargon. Be direct and honest.`
             },
             {
               role: 'user',
@@ -566,17 +566,21 @@ ${intros[0].content || 'Not set'}`;
 Difficulty: ${difficulty || 'medium'}
 ${userContext}
 
-Give me an answer I'd actually say in a real interview - something that sounds like ME, not a robot. Keep it conversational, natural, and honest. No buzzwords, no filler phrases. Just real talk.
+Give me a SHORT, CONVERSATIONAL interview answer with bullet points.
 
-Format it like this:
+Format STRICTLY like this (use actual bullet points):
 **What I'd Say:**
-[Write it as if you're talking to a friend. First person, present tense, conversational. Don't start with "I am" or "My name is" - just dive in naturally]
+• [Short conversational opener - 1-2 sentences max]
+• [Key point 1 - specific and real]
+• [Key point 2 - specific and real]
+• [Short closing - 1 sentence]
 
-**Why This Works:**
-[1-2 short bullet points on what makes this answer good]
+**Key Points:**
+• [Why this works - 1 sentence]
+• [What interviewers look for - 1 sentence]
+• [Common mistake to avoid - 1 sentence]
 
-**Watch Out For:**
-[Common mistakes people make with this question - keep it real and helpful]`
+Keep answers under 30 seconds of speaking time. No fluff.`
             }
           ]
         })
@@ -590,20 +594,11 @@ Format it like this:
       const data = await response.json();
       const generated = data.choices[0].message.content;
       
-      const answerMatch = generated.match(/\*\*What I'd Say:\*\*\s*([\s\S]*?)(?=\*\*Why This Works:|$)/i);
-      const whyWorksMatch = generated.match(/\*\*Why This Works:\*\*\s*([\s\S]*?)(?=\*\*Watch Out For:|$)/i);
-      const watchOutMatch = generated.match(/\*\*Watch Out For:\*\*\s*([\s\S]*?)$/i);
+      const answerMatch = generated.match(/\*\*What I'd Say:\*\*\s*([\s\S]*?)(?=\*\*Key Points:|$)/i);
+      const keyPointsMatch = generated.match(/\*\*Key Points:\*\*\s*([\s\S]*?)$/i);
 
       const answer = answerMatch ? answerMatch[1].trim() : generated;
-      const tips = [];
-      if (whyWorksMatch) {
-        const whyLines = whyWorksMatch[1].split('\n').map((t: string) => t.replace(/^[-*]\s*/, '').trim()).filter(Boolean);
-        tips.push(...whyLines);
-      }
-      if (watchOutMatch) {
-        const watchLines = watchOutMatch[1].split('\n').map((t: string) => t.replace(/^[-*]\s*/, '').trim()).filter(Boolean);
-        tips.push(...watchLines);
-      }
+      const tips = keyPointsMatch ? keyPointsMatch[1].split('\n').map((t: string) => t.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean) : [];
 
       setAnswerEditData({
         answer: answer,
