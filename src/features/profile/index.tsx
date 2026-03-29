@@ -1088,7 +1088,9 @@ export function Profile() {
         {/* Projects Manager - Full Width */}
         {activeSection === 'projects' && (
           <Card className="h-[calc(100vh-220px)] overflow-hidden">
-            <ProjectsManager profile={profile} setProfile={setProfile} />
+            <CardContent className="p-0 h-full">
+              <ProjectsManager profile={profile} setProfile={setProfile} />
+            </CardContent>
           </Card>
         )}
 
@@ -1458,6 +1460,9 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
   const [isOpen, setIsOpen] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [form, setForm] = useState({ title: '', description: '', technologies: '', duration: '', responsibilities: '' });
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+
+  const selectedProject = selectedIdx !== null ? profile.projects[selectedIdx] : null;
 
   const openAdd = () => { setForm({ title: '', description: '', technologies: '', duration: '', responsibilities: '' }); setEditingIdx(null); setIsOpen(true); };
   const openEdit = (idx: number) => {
@@ -1475,62 +1480,151 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
     setIsOpen(false);
   };
 
+  const handleDelete = (idx: number) => {
+    setProfile((p) => ({ ...p, projects: p.projects.filter((_, i) => i !== idx) }));
+    if (selectedIdx === idx) setSelectedIdx(null);
+    else if (selectedIdx !== null && selectedIdx > idx) setSelectedIdx(selectedIdx - 1);
+  };
+
   return (
-    <>
-      <CardHeader className="flex flex-row items-center justify-between py-4 border-b bg-muted/30">
-        <CardTitle className="text-xl">Projects</CardTitle>
-        <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Add Project</Button>
-      </CardHeader>
-      <CardContent className="h-[calc(100%-80px)] overflow-auto p-6">
-        <div className="space-y-4">
+    <div className="flex h-full">
+      {/* Left Side - File List */}
+      <div className="w-72 border-r overflow-auto bg-muted/30 flex-shrink-0">
+        <div className="p-3 border-b bg-muted/50">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Projects</span>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={openAdd}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="p-2 space-y-1">
           {profile.projects.map((proj, idx) => (
-            <div key={proj.id} className="p-4 rounded-lg bg-muted relative hover:bg-muted/80 transition-colors">
-              <div className="absolute top-4 right-4 flex gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(idx)}><Pencil className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setProfile((p) => ({ ...p, projects: p.projects.filter((_, i) => i !== idx) }))}><Trash2 className="h-4 w-4" /></Button>
-              </div>
-              <p className="font-semibold text-lg">{proj.title}</p>
-              <p className="text-sm text-muted-foreground">{proj.duration}</p>
-              {proj.technologies.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {proj.technologies.map((tech, i) => (
-                    <Badge key={i} variant="outline" className="text-xs">{tech}</Badge>
-                  ))}
+            <div 
+              key={proj.id}
+              className={`group p-3 rounded-lg cursor-pointer transition-all ${
+                selectedIdx === idx ? 'bg-primary/10 border border-primary' : 'hover:bg-muted border border-transparent'
+              }`}
+              onClick={() => setSelectedIdx(idx)}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <FileTextIcon className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-sm font-medium truncate">{proj.title}</span>
                 </div>
-              )}
-              {proj.description && <p className="mt-2 text-sm">{proj.description}</p>}
+                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); openEdit(idx); }}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(idx); }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1 ml-6">{proj.duration}</p>
             </div>
           ))}
           {profile.projects.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <FileTextIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No projects added yet</p>
-              <Button variant="outline" size="sm" onClick={openAdd} className="mt-4">
-                <Plus className="h-4 w-4 mr-1" /> Add Your First Project
+            <div className="text-center py-8 text-muted-foreground">
+              <FileTextIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-xs">No projects yet</p>
+              <Button variant="outline" size="sm" onClick={openAdd} className="mt-2 h-7 text-xs">
+                <Plus className="h-3 w-3 mr-1" /> Add Project
               </Button>
             </div>
           )}
         </div>
+      </div>
 
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>{editingIdx !== null ? 'Edit' : 'Add'} Project</DialogTitle></DialogHeader>
-            <div className="space-y-3 py-3">
-              <div><label className="text-sm font-medium">Title</label><Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-sm font-medium">Duration</label><Input value={form.duration} onChange={e => setForm({...form, duration: e.target.value})} placeholder="Jan 2024 - Present" /></div>
-                <div><label className="text-sm font-medium">Technologies</label><Input value={form.technologies} onChange={e => setForm({...form, technologies: e.target.value})} placeholder="Python, AWS, Pandas" /></div>
+      {/* Right Side - Content Viewer */}
+      <div className="flex-1 overflow-hidden bg-background/50 flex flex-col">
+        {selectedProject ? (
+          <>
+            {/* VS Code Style Header */}
+            <div className="bg-muted/80 border-b px-4 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileTextIcon className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">{selectedProject.title}</span>
               </div>
-              <div><label className="text-sm font-medium">Description</label><Textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3} /></div>
-              <div><label className="text-sm font-medium">Responsibilities (one per line)</label><Textarea value={form.responsibilities} onChange={e => setForm({...form, responsibilities: e.target.value})} rows={5} /></div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(selectedIdx!)} title="Edit">
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedIdx(null)} title="Close">
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-              <Button onClick={save}>Save</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </>
+            {/* Content Area */}
+            <div className="flex-1 overflow-auto p-6 space-y-6">
+              {/* Duration & Technologies */}
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Duration</p>
+                  <p className="font-medium">{selectedProject.duration}</p>
+                </div>
+                {selectedProject.technologies.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedProject.technologies.map((tech, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">{tech}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {selectedProject.description && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Description</p>
+                  <p className="text-sm leading-relaxed">{selectedProject.description}</p>
+                </div>
+              )}
+
+              {/* Responsibilities */}
+              {selectedProject.responsibilities && selectedProject.responsibilities.length > 0 && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-3">Responsibilities</p>
+                  <ul className="space-y-2">
+                    {selectedProject.responsibilities.map((resp, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                        <span className="leading-relaxed">{resp}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="h-full flex items-center justify-center text-muted-foreground">
+            <div className="text-center">
+              <FileTextIcon className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p>Select a project to view</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Dialog */}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>{editingIdx !== null ? 'Edit' : 'Add'} Project</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-3">
+            <div><label className="text-sm font-medium">Title</label><Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium">Duration</label><Input value={form.duration} onChange={e => setForm({...form, duration: e.target.value})} placeholder="Jan 2024 - Present" /></div>
+              <div><label className="text-sm font-medium">Technologies</label><Input value={form.technologies} onChange={e => setForm({...form, technologies: e.target.value})} placeholder="Python, AWS, Pandas" /></div>
+            </div>
+            <div><label className="text-sm font-medium">Description</label><Textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3} /></div>
+            <div><label className="text-sm font-medium">Responsibilities (one per line)</label><Textarea value={form.responsibilities} onChange={e => setForm({...form, responsibilities: e.target.value})} rows={5} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button onClick={save}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
