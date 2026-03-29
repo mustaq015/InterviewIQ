@@ -4,7 +4,7 @@ import {
   Plus, Pencil, Trash2, X, Copy, Check, Code, FileCode, Sun, Moon,
   Download, Printer, Braces, Sparkles, ChevronDown, Briefcase, GraduationCap,
   Wrench, FileText as FileTextIcon, GripVertical, User, Save, MessageSquare,
-  Maximize2, Minimize2, Lightbulb
+  Maximize2, Minimize2, Lightbulb, ArrowUpDown
 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import type { Profile, Experience, Education } from '../../types';
@@ -1460,15 +1460,22 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
   const [isOpen, setIsOpen] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [form, setForm] = useState({ title: '', description: '', technologies: '', duration: '', responsibilities: '' });
-  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest');
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
-  const selectedProject = selectedIdx !== null ? profile.projects[selectedIdx] : null;
+  const selectedProject = selectedId !== null ? profile.projects.find(p => p.id === selectedId) || null : null;
+
+  const sortedProjects = [...profile.projects].sort((a, b) => {
+    if (sortBy === 'name') return a.title.localeCompare(b.title);
+    if (sortBy === 'newest') return parseInt(b.id) - parseInt(a.id);
+    return parseInt(a.id) - parseInt(b.id);
+  });
 
   const openAdd = () => { setForm({ title: '', description: '', technologies: '', duration: '', responsibilities: '' }); setEditingIdx(null); setIsOpen(true); };
-  const openEdit = (idx: number) => {
-    const proj = profile.projects[idx];
+  const openEdit = (proj: Project) => {
     setForm({ title: proj.title, description: proj.description, technologies: proj.technologies.join(', '), duration: proj.duration, responsibilities: proj.responsibilities?.join('\n') || '' });
-    setEditingIdx(idx); setIsOpen(true);
+    setEditingIdx(profile.projects.findIndex(p => p.id === proj.id)); setIsOpen(true);
   };
   const save = () => {
     const data = { ...form, technologies: form.technologies.split(',').map(t => t.trim()).filter(t => t), responsibilities: form.responsibilities.split('\n').filter(r => r.trim()) };
@@ -1480,32 +1487,52 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
     setIsOpen(false);
   };
 
-  const handleDelete = (idx: number) => {
-    setProfile((p) => ({ ...p, projects: p.projects.filter((_, i) => i !== idx) }));
-    if (selectedIdx === idx) setSelectedIdx(null);
-    else if (selectedIdx !== null && selectedIdx > idx) setSelectedIdx(selectedIdx - 1);
+  const handleDelete = (id: string) => {
+    setProfile((p) => ({ ...p, projects: p.projects.filter(proj => proj.id !== id) }));
+    if (selectedId === id) setSelectedId(null);
   };
 
   return (
-    <div className="flex h-full">
+    <div className="flex" style={{ height: 'calc(100vh - 220px - 80px)' }}>
       {/* Left Side - File List */}
       <div className="w-72 border-r overflow-auto bg-muted/30 flex-shrink-0">
         <div className="p-3 border-b bg-muted/50">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Projects</span>
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={openAdd}>
-              <Plus className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Projects ({profile.projects.length})</span>
+            <div className="flex gap-1">
+              <div className="relative">
+                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setShowSortMenu(!showSortMenu)} title="Sort">
+                  <ArrowUpDown className="h-3.5 w-3.5" />
+                </Button>
+                {showSortMenu && (
+                  <div className="absolute right-0 top-full mt-1 bg-background border rounded-lg shadow-lg z-50 min-w-[120px]">
+                    <button className={`w-full px-3 py-2 text-left text-xs hover:bg-muted ${sortBy === 'newest' ? 'bg-primary/10 text-primary' : ''}`} onClick={() => { setSortBy('newest'); setShowSortMenu(false); }}>
+                      Newest First
+                    </button>
+                    <button className={`w-full px-3 py-2 text-left text-xs hover:bg-muted ${sortBy === 'oldest' ? 'bg-primary/10 text-primary' : ''}`} onClick={() => { setSortBy('oldest'); setShowSortMenu(false); }}>
+                      Oldest First
+                    </button>
+                    <button className={`w-full px-3 py-2 text-left text-xs hover:bg-muted ${sortBy === 'name' ? 'bg-primary/10 text-primary' : ''}`} onClick={() => { setSortBy('name'); setShowSortMenu(false); }}>
+                      By Name
+                    </button>
+                  </div>
+                )}
+              </div>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={openAdd}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
         <div className="p-2 space-y-1">
-          {profile.projects.map((proj, idx) => (
-            <div 
+          {sortedProjects.map((proj) => (
+            <button
               key={proj.id}
-              className={`group p-3 rounded-lg cursor-pointer transition-all ${
-                selectedIdx === idx ? 'bg-primary/10 border border-primary' : 'hover:bg-muted border border-transparent'
+              type="button"
+              className={`group w-full text-left p-3 rounded-lg cursor-pointer transition-all ${
+                selectedId === proj.id ? 'bg-primary/10 border border-primary' : 'hover:bg-muted border border-transparent bg-transparent'
               }`}
-              onClick={() => setSelectedIdx(idx)}
+              onClick={() => setSelectedId(proj.id)}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1513,16 +1540,16 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
                   <span className="text-sm font-medium truncate">{proj.title}</span>
                 </div>
                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); openEdit(idx); }}>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); openEdit(proj); }}>
                     <Pencil className="h-3 w-3" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(idx); }}>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(proj.id); }}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
               <p className="text-[10px] text-muted-foreground mt-1 ml-6">{proj.duration}</p>
-            </div>
+            </button>
           ))}
           {profile.projects.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
@@ -1547,10 +1574,10 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
                 <span className="text-sm font-medium">{selectedProject.title}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(selectedIdx!)} title="Edit">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(selectedProject)} title="Edit">
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedIdx(null)} title="Close">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedId(null)} title="Close">
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
