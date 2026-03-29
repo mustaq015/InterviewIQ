@@ -841,6 +841,19 @@ Format the output as:
             <CheckCircle className="h-4 w-4 text-green-500" />
             <span>{overallProgress.reviewed} / {overallProgress.total}</span>
           </div>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => {
+              setEditingTopic(null);
+              setTopicFormData({ name: '', description: '', icon: 'database', color: 'bg-blue-500' });
+              setIsTopicFormOpen(true);
+            }}
+            className="gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            Add Topic
+          </Button>
         </div>
       </div>
 
