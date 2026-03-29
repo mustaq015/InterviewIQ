@@ -4,7 +4,7 @@ import {
   Plus, Pencil, Trash2, X, Copy, Check, Code, FileCode, Sun, Moon,
   Download, Printer, Braces, Sparkles, ChevronDown, Briefcase, GraduationCap,
   Wrench, FileText as FileTextIcon, GripVertical, User, Save, MessageSquare,
-  Maximize2, Minimize2
+  Maximize2, Minimize2, Lightbulb
 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import type { Profile, Experience, Education } from '../../types';
@@ -1153,30 +1153,37 @@ export function Profile() {
                   {/* Right Side - Content Viewer or Empty State */}
                   <div className="flex-1 overflow-auto bg-background/50">
                     {fullscreenIntro ? (
-                      <div className="max-w-3xl mx-auto p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h2 className="text-xl font-semibold flex items-center gap-2">
-                            <FileTextIcon className="h-5 w-5 text-primary" />
-                            {fullscreenIntro.title}
-                          </h2>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleCopyIntro(fullscreenIntro)} title="Copy">
-                              {copiedIntro ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => setFullscreenIntro(null)} title="Minimize">
-                              <Minimize2 className="h-4 w-4" />
-                            </Button>
+                      <div className="h-full flex flex-col">
+                        {/* File Header - Always visible */}
+                        <div className="sticky top-0 bg-background/95 backdrop-blur border-b p-4 z-10">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <FileTextIcon className="h-5 w-5 text-primary flex-shrink-0" />
+                              <h2 className="text-lg font-semibold truncate">
+                                {fullscreenIntro.title}
+                              </h2>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="icon" onClick={() => handleCopyIntro(fullscreenIntro)} title="Copy">
+                                {copiedIntro ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => setFullscreenIntro(null)} title="Minimize">
+                                <Minimize2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                        <div className="p-6 bg-background rounded-lg border shadow-sm">
-                          <div className="prose prose-lg dark:prose-invert max-w-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-medium [&_p]:my-3 [&_p]:leading-relaxed [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
+                        {/* Content Area - Full Width */}
+                        <div className="flex-1 p-6 overflow-auto">
+                          <div className="prose prose-lg dark:prose-invert max-w-none h-full [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-medium [&_p]:my-3 [&_p]:leading-relaxed [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                               {fullscreenIntro.content}
                             </ReactMarkdown>
                           </div>
                         </div>
+                        {/* Tips Section */}
                         {fullscreenIntro.tips && (
-                          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                          <div className="border-t p-4 bg-yellow-50/50 dark:bg-yellow-900/10">
                             <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-2 flex items-center gap-2">
                               <Lightbulb className="h-4 w-4" /> Tips
                             </p>
