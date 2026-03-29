@@ -812,40 +812,22 @@ Please explain this query in a clear, structured way covering:
                                     </>
                                   )}
                                 </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={explainQuery}
-                                  disabled={aiExplaining}
-                                  className="gap-1.5"
-                                >
-                                  {aiExplaining ? (
-                                    <>
-                                      <Sparkles className="h-3.5 w-3.5 animate-spin" />
-                                      Explaining...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Bot className="h-3.5 w-3.5" />
-                                      Explain
-                                    </>
-                                  )}
-                                </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={explainQuery}
                                 disabled={aiExplaining}
+                                className="gap-1.5"
                               >
                                 {aiExplaining ? (
                                   <>
-                                    <Sparkles className="h-3 w-3 mr-1 animate-spin" />
+                                    <Sparkles className="h-3.5 w-3.5 animate-spin" />
                                     Explaining...
                                   </>
                                 ) : (
                                   <>
-                                    <Bot className="h-3 w-3 mr-1" />
-                                    Explain Query
+                                    <Bot className="h-3.5 w-3.5" />
+                                    Explain
                                   </>
                                 )}
                               </Button>
@@ -860,7 +842,8 @@ Please explain this query in a clear, structured way covering:
                               theme={isDarkMode ? 'vs-dark' : 'vs'}
                               options={{
                                 fontSize: 14,
-                                fontFamily: "'Fira Code', 'Cascadia Code', Consolas, monospace",
+                                fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+                                fontLigatures: true,
                                 minimap: { enabled: false },
                                 wordWrap: 'on',
                                 padding: { top: 16, bottom: 16 },
@@ -869,22 +852,24 @@ Please explain this query in a clear, structured way covering:
                                 glyphMargin: false,
                                 lineDecorationsWidth: 8,
                                 lineNumbersMinChars: 3,
-                                renderLineHighlight: 'gutter',
-                                occurrencesHighlight: 'off',
+                                renderLineHighlight: 'all',
+                                occurrencesHighlight: 'singleFile',
                                 selectionHighlight: false,
                                 matchBrackets: 'always',
                                 cursorBlinking: 'smooth',
                                 smoothScrolling: true,
                                 contextmenu: true,
-                                'semanticHighlighting.enabled': false,
                                 bracketPairColorization: { enabled: true },
                                 formatOnPaste: true,
                                 formatOnType: true,
+                                renderWhitespace: 'none',
+                                codeLens: false,
+                                contextmenu: true,
+                                scrollBeyondLastLine: false,
                               }}
                               onMount={(editor) => {
                                 editor.updateOptions({
                                   links: false,
-                                  'editor.link.enabled': false,
                                 });
                                 try {
                                   editor.getAction('editor.action.openLink')?.disable();
