@@ -1094,7 +1094,7 @@ export function Profile() {
 
         {/* Self Introduction Manager */}
         {activeSection === 'self-intro' && (
-          <Card className="h-[calc(100vh-220px)] overflow-hidden">
+          <Card className="h-[calc(100vh-220px)] overflow-hidden relative">
             <CardHeader className="flex flex-row items-center justify-between py-4 border-b bg-muted/30">
               <CardTitle className="text-xl flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
@@ -1503,41 +1503,47 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
           </DialogContent>
         </Dialog>
 
-        {/* Fullscreen Self Introduction Overlay */}
+        {/* Right Slide Panel for Self Introduction */}
         {fullscreenIntro && (
-          <div className="fixed inset-x-0 bottom-0 top-[65px] z-40 bg-background border-t overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300">
-            <div className="flex items-center justify-between px-6 py-3 bg-muted/50 border-b flex-shrink-0">
-              <h2 className="flex items-center gap-2 font-semibold text-lg">
-                <FileTextIcon className="h-5 w-5" />
-                {fullscreenIntro.title}
-              </h2>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setFullscreenIntro(null)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            <div className="flex-1 overflow-auto p-6">
-              <div className="max-w-4xl mx-auto space-y-4">
-                <div className="p-6 bg-background rounded-lg border">
-                  <div className="prose prose-lg dark:prose-invert max-w-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-medium [&_p]:my-3 [&_p]:leading-relaxed [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {fullscreenIntro.content}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-                {fullscreenIntro.tips && (
-                  <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-2 flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4" /> Tips
-                    </p>
-                    <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullscreenIntro.tips}</ReactMarkdown>
+          <div className="absolute inset-0 z-40 flex">
+            <div 
+              className="absolute inset-0 bg-black/30 -left-full"
+              onClick={() => setFullscreenIntro(null)}
+            />
+            <div className="absolute inset-y-0 right-0 w-full max-w-2xl bg-background border-l shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
+              <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b flex-shrink-0">
+                <h2 className="flex items-center gap-2 font-semibold">
+                  <FileTextIcon className="h-5 w-5" />
+                  {fullscreenIntro.title}
+                </h2>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setFullscreenIntro(null)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                <div className="space-y-4">
+                  <div className="p-4 bg-background rounded-lg border">
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&_h1]:text-xl [&_h1]:font-bold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-medium [&_p]:my-2 [&_p]:leading-relaxed [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {fullscreenIntro.content}
+                      </ReactMarkdown>
                     </div>
                   </div>
-                )}
+                  {fullscreenIntro.tips && (
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                      <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-2 flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4" /> Tips
+                      </p>
+                      <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullscreenIntro.tips}</ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
