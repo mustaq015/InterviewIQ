@@ -70,6 +70,7 @@ export function Practice() {
 
   const [topicForm, setTopicForm] = useState({ name: '', color: 'bg-blue-500' });
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  const [isCreatingTopic, setIsCreatingTopic] = useState(false);
 
   const [problemForm, setProblemForm] = useState<{ name: string; difficulty: 'easy' | 'medium' | 'hard'; description: string; expectedTime: number; tags: string }>({ name: '', difficulty: 'medium', description: '', expectedTime: 30, tags: '' });
   const [editingProblem, setEditingProblem] = useState<Problem | null>(null);
@@ -105,15 +106,18 @@ export function Practice() {
   const openTopicForm = (topic?: Topic) => {
     if (topic) {
       setEditingTopic(topic);
+      setIsCreatingTopic(false);
       setTopicForm({ name: topic.name, color: topic.color });
     } else {
       setEditingTopic(null);
+      setIsCreatingTopic(true);
       setTopicForm({ name: '', color: 'bg-blue-500' });
     }
   };
 
   const closeTopicForm = () => {
     setEditingTopic(null);
+    setIsCreatingTopic(false);
     setTopicForm({ name: '', color: 'bg-blue-500' });
   };
 
@@ -303,11 +307,11 @@ export function Practice() {
         )}
       </div>
 
-      {editingTopic && (
+      {(editingTopic || isCreatingTopic) && (
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle>{editingTopic.id.startsWith('topic-') ? 'Edit Topic' : 'New Topic'}</CardTitle>
+              <CardTitle>{isCreatingTopic ? 'New Topic' : 'Edit Topic'}</CardTitle>
               <button onClick={closeTopicForm} className="p-1 hover:bg-muted rounded"><X className="h-5 w-5" /></button>
             </div>
           </CardHeader>
@@ -338,7 +342,7 @@ export function Practice() {
               <Button variant="outline" onClick={closeTopicForm}>Cancel</Button>
               <Button onClick={saveTopic} disabled={!topicForm.name.trim()}>
                 <Save className="h-4 w-4 mr-2" />
-                {editingTopic.id.startsWith('topic-') ? 'Update' : 'Create'}
+                {isCreatingTopic ? 'Create' : 'Update'}
               </Button>
             </div>
           </CardContent>
