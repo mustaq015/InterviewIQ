@@ -1087,10 +1087,8 @@ export function Profile() {
 
         {/* Projects Manager - Full Width */}
         {activeSection === 'projects' && (
-          <Card className="h-[calc(100vh-220px)] overflow-hidden">
-            <CardContent className="p-0 h-full">
-              <ProjectsManager profile={profile} setProfile={setProfile} />
-            </CardContent>
+          <Card className="h-[calc(100vh-220px)] overflow-hidden [&>div]:!p-0">
+            <ProjectsManager profile={profile} setProfile={setProfile} />
           </Card>
         )}
 
@@ -1493,7 +1491,7 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
   };
 
   return (
-    <div className="flex" style={{ height: 'calc(100vh - 220px - 80px)' }}>
+    <div className="flex h-full">
       {/* Left Side - File List */}
       <div className="w-72 border-r overflow-auto bg-muted/30 flex-shrink-0">
         <div className="p-3 border-b bg-muted/50">
