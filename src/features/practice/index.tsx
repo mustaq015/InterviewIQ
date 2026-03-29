@@ -84,6 +84,7 @@ export function Practice() {
   const [aiReviewLoading, setAiReviewLoading] = useState(false);
   const [aiReview, setAiReview] = useState<string | null>(null);
   const [aiReviewError, setAiReviewError] = useState<string | null>(null);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   const getCodeKey = (topicId: string, problemId: string) => `${topicId}:${problemId}`;
 
@@ -280,6 +281,57 @@ export function Practice() {
       setAiReviewError((err as Error).message);
     } finally {
       setAiReviewLoading(false);
+    }
+  };
+
+  const generateCode = async () => {
+    const problem = problems[selectedTopicId!]?.find(p => p.id === expandedProblemId);
+    if (!problem) return;
+
+    setAiGenerating(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert programmer. Generate clean, working code based on the problem description. Only output the code, no explanations.'
+            },
+            {
+              role: 'user',
+              content: `Problem Name: ${problem.name}
+Description: ${problem.description || 'Solve this problem'}
+Difficulty: ${problem.difficulty}
+Expected Time: ${problem.expectedTime || 30} minutes
+Tags: ${problem.tags?.join(', ') || 'None'}
+
+Language: ${currentLang}
+
+Generate code to solve this problem. Only output the code block with the solution.`
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Failed to generate code');
+      }
+
+      const data = await response.json();
+      const generatedCode = data.choices[0].message.content;
+      
+      const codeMatch = generatedCode.match(/```(?:\w+)?\n?([\s\S]*?)```/);
+      const cleanCode = codeMatch ? codeMatch[1].trim() : generatedCode;
+      
+      setCurrentCode(cleanCode);
+    } catch (err) {
+      setAiReviewError((err as Error).message);
+    } finally {
+      setAiGenerating(false);
     }
   };
 
@@ -658,6 +710,24 @@ export function Practice() {
                               <Button size="sm" onClick={() => { saveCode(); }}>
                                 <Save className="h-3 w-3 mr-1" />
                                 Save
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={generateCode}
+                                disabled={aiGenerating}
+                              >
+                                {aiGenerating ? (
+                                  <>
+                                    <Sparkles className="h-3 w-3 mr-1 animate-spin" />
+                                    Generating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="h-3 w-3 mr-1" />
+                                    Generate Code
+                                  </>
+                                )}
                               </Button>
                               <Button
                                 variant="default"
