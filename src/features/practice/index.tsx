@@ -689,7 +689,14 @@ export function Practice() {
                               fontSize: 13,
                               minimap: { enabled: false },
                               wordWrap: 'on',
-                              padding: { top: 8 }
+                              padding: { top: 8 },
+                              suggest: { showStatusBar: false },
+                              inlineSuggest: { enabled: false },
+                              quickSuggestions: false,
+                              parameterHints: { enabled: false },
+                              hover: { enabled: false },
+                              folding: false,
+                              links: false
                             }}
                           />
                           {(aiReview || aiReviewError) && (
