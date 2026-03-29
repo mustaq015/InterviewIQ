@@ -74,6 +74,7 @@ export function Practice() {
 
   const [problemForm, setProblemForm] = useState<{ name: string; difficulty: 'easy' | 'medium' | 'hard'; description: string; expectedTime: number; tags: string }>({ name: '', difficulty: 'medium', description: '', expectedTime: 30, tags: '' });
   const [editingProblem, setEditingProblem] = useState<Problem | null>(null);
+  const [isCreatingProblem, setIsCreatingProblem] = useState(false);
 
   const [expandedProblemId, setExpandedProblemId] = useState<string | null>(null);
   const [currentCode, setCurrentCode] = useState('');
@@ -143,6 +144,7 @@ export function Practice() {
   const openProblemForm = (problem?: Problem) => {
     if (problem) {
       setEditingProblem(problem);
+      setIsCreatingProblem(false);
       setProblemForm({
         name: problem.name,
         difficulty: problem.difficulty,
@@ -152,12 +154,14 @@ export function Practice() {
       });
     } else {
       setEditingProblem(null);
+      setIsCreatingProblem(true);
       setProblemForm({ name: '', difficulty: 'medium', description: '', expectedTime: 30, tags: '' });
     }
   };
 
   const closeProblemForm = () => {
     setEditingProblem(null);
+    setIsCreatingProblem(false);
     setProblemForm({ name: '', difficulty: 'medium', description: '', expectedTime: 30, tags: '' });
   };
 
@@ -349,11 +353,11 @@ export function Practice() {
         </Card>
       )}
 
-      {editingProblem && (
+      {(editingProblem || isCreatingProblem) && (
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle>{editingProblem.id.startsWith('problem-') ? 'Edit Problem' : 'New Problem'}</CardTitle>
+              <CardTitle>{isCreatingProblem ? 'New Problem' : 'Edit Problem'}</CardTitle>
               <button onClick={closeProblemForm} className="p-1 hover:bg-muted rounded"><X className="h-5 w-5" /></button>
             </div>
           </CardHeader>
@@ -410,14 +414,14 @@ export function Practice() {
               </div>
             </div>
             <div className="flex justify-between">
-              {editingProblem.id.startsWith('problem-') && (
+              {editingProblem && (
                 <Button variant="destructive" onClick={() => deleteProblem(editingProblem.id)}>Delete</Button>
               )}
               <div className="flex gap-2 ml-auto">
                 <Button variant="outline" onClick={closeProblemForm}>Cancel</Button>
                 <Button onClick={saveProblem} disabled={!problemForm.name.trim()}>
                   <Save className="h-4 w-4 mr-2" />
-                  {editingProblem.id.startsWith('problem-') ? 'Update' : 'Create'}
+                  {isCreatingProblem ? 'Create' : 'Update'}
                 </Button>
               </div>
             </div>
