@@ -43,7 +43,9 @@ import {
   Play,
   Square,
   Trophy,
-  Target
+  Target,
+  Bot,
+  Sparkles
 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import type { Difficulty } from '../../types';
@@ -203,6 +205,7 @@ export function InterviewHub() {
   const [isPredefinedEditOpen, setIsPredefinedEditOpen] = useState(false);
   const [predefinedEditData, setPredefinedEditData] = useState<{ question: string; answer: string; tips: string }>({ question: '', answer: '', tips: '' });
   const [editingPredefinedId, setEditingPredefinedId] = useState<string | null>(null);
+  const [generatingAnswer, setGeneratingAnswer] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -515,6 +518,96 @@ export function InterviewHub() {
     }));
     
     setEditingAnswer(null);
+  };
+
+  const generateAnswer = async (question: string, difficulty?: string) => {
+    setGeneratingAnswer(true);
+    
+    let userContext = '';
+    try {
+      const profileData = localStorage.getItem('user-profile');
+      const selfIntrosData = localStorage.getItem('self-introductions');
+      
+      if (profileData) {
+        const profile = JSON.parse(profileData);
+        userContext += `\n\n**MY PROFILE:**
+- Name: ${profile.name || 'Not set'}
+- Summary: ${profile.summary || 'Not set'}
+- Skills: ${profile.skills?.join(', ') || 'Not set'}
+- Experience: ${profile.experience?.map((e: { company: string; role: string; startDate: string; endDate: string; description: string }) => 
+          `${e.role} at ${e.company} (${e.startDate} - ${e.endDate || 'Present'}): ${e.description}`
+        ).join('; ') || 'Not set'}`;
+      }
+      
+      if (selfIntrosData) {
+        const intros = JSON.parse(selfIntrosData);
+        if (intros.length > 0) {
+          userContext += `\n\n**MY SELF INTRODUCTION:**
+${intros[0].content || 'Not set'}`;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load user context:', e);
+    }
+    
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert interview coach. Generate professional, concise interview answers using the STAR method where appropriate. Format your response with the answer in markdown.'
+            },
+            {
+              role: 'user',
+              content: `Question: ${question}
+Difficulty: ${difficulty || 'medium'}
+${userContext}
+
+Generate a professional, well-structured interview answer. Include:
+1. A clear, concise main answer (using the user's profile above)
+2. Key points to remember
+3. Any relevant examples or tips
+
+Format the output as:
+**Answer:** [Your answer here]
+
+**Key Points:** [bullet points]
+
+**Tips:** [any tips]`
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Failed to generate answer');
+      }
+
+      const data = await response.json();
+      const generated = data.choices[0].message.content;
+      
+      const answerMatch = generated.match(/\*\*Answer:\*\*\s*([\s\S]*?)(?=\*\*Key Points:|$)/i);
+      const keyPointsMatch = generated.match(/\*\*Key Points:\*\*\s*([\s\S]*?)(?=\*\*Tips:|$)/i);
+      const tipsMatch = generated.match(/\*\*Tips:\*\*\s*([\s\S]*?)$/i);
+
+      const answer = answerMatch ? answerMatch[1].trim() : generated;
+      const tips = keyPointsMatch ? keyPointsMatch[1].split('\n').map((t: string) => t.replace(/^[-*]\s*/, '').trim()).filter(Boolean) : [];
+      const tipsText = tipsMatch ? tipsMatch[1].trim() : '';
+
+      setAnswerEditData({
+        answer: answer,
+        tips: [...tips, ...(tipsText ? [tipsText] : [])].slice(0, 10)
+      });
+    } catch (err) {
+      console.error('Failed to generate answer:', err);
+      alert('Failed to generate answer. Please try again.');
+    } finally {
+      setGeneratingAnswer(false);
+    }
   };
 
   const handleDeleteAnswer = (questionId: string) => {
@@ -1212,11 +1305,29 @@ export function InterviewHub() {
                   {expandedQuestions.has(q.id) && (
                     <div className="px-4 pb-4 pl-10 space-y-3">
                       <div className="border-t pt-3">
-                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-2">
                           <h4 className="text-sm font-semibold">Answer</h4>
                           <div className="flex gap-1">
                             {editingAnswer === q.id ? (
                               <>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => generateAnswer(q.question, q.difficulty)}
+                                  disabled={generatingAnswer}
+                                >
+                                  {generatingAnswer ? (
+                                    <>
+                                      <Sparkles className="h-3 w-3 mr-1 animate-spin" />
+                                      Generating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Bot className="h-3 w-3 mr-1" />
+                                      Generate
+                                    </>
+                                  )}
+                                </Button>
                                 <Button 
                                   size="sm" 
                                   variant="default"
