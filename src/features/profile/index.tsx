@@ -1151,31 +1151,27 @@ export function Profile() {
                     </div>
                   </div>
                   {/* Right Side - Content Viewer or Empty State */}
-                  <div className="flex-1 overflow-auto bg-background/50">
+                  <div className="flex-1 overflow-hidden bg-background/50 flex flex-col">
                     {fullscreenIntro ? (
-                      <div className="h-full flex flex-col">
-                        {/* File Header - Always visible */}
-                        <div className="sticky top-0 bg-background/95 backdrop-blur border-b p-4 z-10">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <FileTextIcon className="h-5 w-5 text-primary flex-shrink-0" />
-                              <h2 className="text-lg font-semibold truncate">
-                                {fullscreenIntro.title}
-                              </h2>
-                            </div>
-                            <div className="flex gap-1 flex-shrink-0">
-                              <Button variant="ghost" size="icon" onClick={() => handleCopyIntro(fullscreenIntro)} title="Copy">
-                                {copiedIntro ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => setFullscreenIntro(null)} title="Minimize">
-                                <Minimize2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                      <>
+                        {/* VS Code Style Header */}
+                        <div className="bg-muted/80 border-b px-4 py-2 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <FileTextIcon className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium">{fullscreenIntro.title}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyIntro(fullscreenIntro)} title="Copy">
+                              {copiedIntro ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFullscreenIntro(null)} title="Close">
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                         </div>
                         {/* Content Area - Full Width */}
-                        <div className="flex-1 p-6 overflow-auto">
-                          <div className="prose prose-lg dark:prose-invert max-w-none h-full [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-medium [&_p]:my-3 [&_p]:leading-relaxed [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
+                        <div className="flex-1 overflow-auto p-6">
+                          <div className="prose prose-lg dark:prose-invert max-w-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-medium [&_p]:my-3 [&_p]:leading-relaxed [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                               {fullscreenIntro.content}
                             </ReactMarkdown>
@@ -1192,11 +1188,11 @@ export function Profile() {
                             </div>
                           </div>
                         )}
-                      </div>
+                      </>
                     ) : (
                       <div className="h-full flex items-center justify-center text-muted-foreground">
                         <div className="text-center">
-                          <Maximize2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                          <FileTextIcon className="h-12 w-12 mx-auto mb-4 opacity-30" />
                           <p>Select a file to view</p>
                         </div>
                       </div>
