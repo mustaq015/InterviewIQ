@@ -1104,72 +1104,147 @@ export function Profile() {
                 <Plus className="h-4 w-4 mr-1" /> Add File
               </Button>
             </CardHeader>
-            <CardContent className="h-[calc(100%-80px)] overflow-auto p-6">
+            <CardContent className="h-[calc(100%-80px)] overflow-hidden p-0">
               {selfIntros.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No files added yet</p>
-                  <p className="text-sm mt-1">Add your self-introduction files with tips</p>
-                  <Button variant="outline" size="sm" onClick={openNewIntro} className="mt-4">
-                    <Plus className="h-4 w-4 mr-1" /> Add Your First File
-                  </Button>
+                <div className="h-full flex items-center justify-center text-muted-foreground p-6">
+                  <div className="text-center">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No files added yet</p>
+                    <p className="text-sm mt-1">Add your self-introduction files with tips</p>
+                    <Button variant="outline" size="sm" onClick={openNewIntro} className="mt-4">
+                      <Plus className="h-4 w-4 mr-1" /> Add Your First File
+                    </Button>
+                  </div>
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {selfIntros.map((intro) => (
-                    <div key={intro.id} className="p-4 rounded-lg bg-muted relative hover:bg-muted/80 transition-colors border">
-                      <div className="absolute top-4 right-4 flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCopyIntro(intro)} title="Copy">
-                          {copiedIntro && viewingIntro?.id === intro.id ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditIntro(intro)} title="Edit">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteIntro(intro.id)} title="Delete">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <h3 className="font-semibold text-lg pr-20">{intro.title}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Updated: {new Date(intro.updatedAt).toLocaleDateString()}
-                      </p>
-                      <div className="mt-3 flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setViewingIntro(viewingIntro?.id === intro.id ? null : intro)}>
-                          {viewingIntro?.id === intro.id ? 'Hide' : 'View'}
-                        </Button>
-                        {intro.tips && (
-                          <Badge variant="secondary" className="text-xs">
-                            Tips available
-                          </Badge>
-                        )}
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                <div className="flex h-full">
+                  {/* Left Side - File List */}
+                  <div className={`${fullscreenIntro ? 'w-80' : 'w-full'} border-r overflow-auto transition-all duration-300`}>
+                    <div className="p-3 space-y-2">
+                      {selfIntros.map((intro) => (
+                        <div 
+                          key={intro.id} 
+                          className={`p-3 rounded-lg cursor-pointer transition-all border ${
+                            fullscreenIntro?.id === intro.id 
+                              ? 'bg-primary/10 border-primary' 
+                              : 'bg-muted hover:bg-muted/80 border-transparent'
+                          }`}
                           onClick={() => setFullscreenIntro(intro)}
-                          className="ml-auto"
                         >
-                          <Maximize2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      {viewingIntro?.id === intro.id && (
-                        <div className="mt-3 space-y-3">
-                          <div className="p-3 bg-background rounded-md border text-sm max-h-[200px] overflow-auto prose prose-sm dark:prose-invert max-w-none [&_pre]:bg-muted [&_pre]:p-2 [&_pre]:rounded [&_code]:text-xs">
+                          <div className="flex items-start justify-between">
+                            <h3 className="font-medium text-sm truncate flex-1">{intro.title}</h3>
+                            <div className="flex gap-1 ml-2">
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); openEditIntro(intro); }} title="Edit">
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteIntro(intro.id); }} title="Delete">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {new Date(intro.updatedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Right Side - Content Viewer */}
+                  {fullscreenIntro && (
+                    <div className="flex-1 overflow-auto p-4 bg-background">
+                      <div className="max-w-3xl mx-auto space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-xl font-semibold">{fullscreenIntro.title}</h2>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleCopyIntro(fullscreenIntro)} title="Copy">
+                              {copiedIntro ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setFullscreenIntro(null)} title="Close">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="p-6 bg-background rounded-lg border">
+                          <div className="prose prose-lg dark:prose-invert max-w-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-medium [&_p]:my-3 [&_p]:leading-relaxed [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {intro.content}
+                              {fullscreenIntro.content}
                             </ReactMarkdown>
                           </div>
-                          {intro.tips && (
-                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
-                              <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-1">Tips:</p>
-                              <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{intro.tips}</ReactMarkdown>
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      )}
+                        {fullscreenIntro.tips && (
+                          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                            <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-2 flex items-center gap-2">
+                              <Lightbulb className="h-4 w-4" /> Tips
+                            </p>
+                            <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullscreenIntro.tips}</ReactMarkdown>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ))}
+                  )}
+                  {/* Show grid when no fullscreen */}
+                  {!fullscreenIntro && (
+                    <div className="flex-1 overflow-auto p-4">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {selfIntros.map((intro) => (
+                          <div key={intro.id} className="p-4 rounded-lg bg-muted relative hover:bg-muted/80 transition-colors border">
+                            <div className="absolute top-4 right-4 flex gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCopyIntro(intro)} title="Copy">
+                                {copiedIntro && viewingIntro?.id === intro.id ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditIntro(intro)} title="Edit">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteIntro(intro.id)} title="Delete">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <h3 className="font-semibold text-lg pr-20">{intro.title}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Updated: {new Date(intro.updatedAt).toLocaleDateString()}
+                            </p>
+                            <div className="mt-3 flex gap-2">
+                              <Button variant="outline" size="sm" onClick={() => setViewingIntro(viewingIntro?.id === intro.id ? null : intro)}>
+                                {viewingIntro?.id === intro.id ? 'Hide' : 'View'}
+                              </Button>
+                              {intro.tips && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Tips available
+                                </Badge>
+                              )}
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => setFullscreenIntro(intro)}
+                                className="ml-auto"
+                              >
+                                <Maximize2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            {viewingIntro?.id === intro.id && (
+                              <div className="mt-3 space-y-3">
+                                <div className="p-3 bg-background rounded-md border text-sm max-h-[200px] overflow-auto prose prose-sm dark:prose-invert max-w-none [&_pre]:bg-muted [&_pre]:p-2 [&_pre]:rounded [&_code]:text-xs">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {intro.content}
+                                  </ReactMarkdown>
+                                </div>
+                                {intro.tips && (
+                                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
+                                    <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-1">Tips:</p>
+                                    <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{intro.tips}</ReactMarkdown>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -1502,52 +1577,6 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Right Slide Panel for Self Introduction */}
-        {fullscreenIntro && (
-          <div className="absolute inset-0 z-40 flex">
-            <div 
-              className="absolute inset-0 bg-black/30 -left-full"
-              onClick={() => setFullscreenIntro(null)}
-            />
-            <div className="absolute inset-y-0 right-0 w-full max-w-2xl bg-background border-l shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-right duration-300">
-              <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b flex-shrink-0">
-                <h2 className="flex items-center gap-2 font-semibold">
-                  <FileTextIcon className="h-5 w-5" />
-                  {fullscreenIntro.title}
-                </h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setFullscreenIntro(null)}
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              <div className="flex-1 overflow-auto p-4">
-                <div className="space-y-4">
-                  <div className="p-4 bg-background rounded-lg border">
-                    <div className="prose prose-sm dark:prose-invert max-w-none [&_h1]:text-xl [&_h1]:font-bold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-medium [&_p]:my-2 [&_p]:leading-relaxed [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-muted [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {fullscreenIntro.content}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                  {fullscreenIntro.tips && (
-                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                      <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-2 flex items-center gap-2">
-                        <Lightbulb className="h-4 w-4" /> Tips
-                      </p>
-                      <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullscreenIntro.tips}</ReactMarkdown>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </>
   );
