@@ -3,12 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Input, Textarea, Dial
 import { 
   Plus, Pencil, Trash2, X, Copy, Check, Code, FileCode, Sun, Moon,
   Download, Printer, Braces, Sparkles, ChevronDown, Briefcase, GraduationCap,
-  Wrench, FileText as FileTextIcon, GripVertical, User, Save, MessageSquare
+  Wrench, FileText as FileTextIcon, GripVertical, User, Save, MessageSquare,
+  Maximize2, Minimize2
 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import type { Profile, Experience, Education } from '../../types';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -193,6 +196,7 @@ export function Profile() {
   const [editingIntro, setEditingIntro] = useState<SelfIntro | null>(null);
   const [introForm, setIntroForm] = useState({ title: '', content: '', tips: '' });
   const [viewingIntro, setViewingIntro] = useState<SelfIntro | null>(null);
+  const [fullscreenIntro, setFullscreenIntro] = useState<SelfIntro | null>(null);
   const [copiedIntro, setCopiedIntro] = useState(false);
 
   useEffect(() => {
@@ -1138,16 +1142,28 @@ export function Profile() {
                             Tips available
                           </Badge>
                         )}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setFullscreenIntro(intro)}
+                          className="ml-auto"
+                        >
+                          <Maximize2 className="h-4 w-4" />
+                        </Button>
                       </div>
                       {viewingIntro?.id === intro.id && (
                         <div className="mt-3 space-y-3">
-                          <div className="p-3 bg-background rounded-md border text-sm whitespace-pre-wrap max-h-[200px] overflow-auto">
-                            {intro.content}
+                          <div className="p-3 bg-background rounded-md border text-sm max-h-[200px] overflow-auto prose prose-sm dark:prose-invert max-w-none [&_pre]:bg-muted [&_pre]:p-2 [&_pre]:rounded [&_code]:text-xs">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {intro.content}
+                            </ReactMarkdown>
                           </div>
                           {intro.tips && (
                             <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
                               <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-1">Tips:</p>
-                              <p className="text-sm whitespace-pre-wrap">{intro.tips}</p>
+                              <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{intro.tips}</ReactMarkdown>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -1484,6 +1500,50 @@ function ProjectsManager({ profile, setProfile }: { profile: typeof defaultProfi
               <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
               <Button onClick={save}>Save</Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Fullscreen Self Introduction Dialog */}
+        <Dialog open={!!fullscreenIntro} onOpenChange={() => setFullscreenIntro(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <div className="flex items-center justify-between pr-8">
+                <DialogTitle className="flex items-center gap-2">
+                  <FileTextIcon className="h-5 w-5" />
+                  {fullscreenIntro?.title}
+                </DialogTitle>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setFullscreenIntro(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </DialogHeader>
+            <div className="flex-1 overflow-auto p-2 space-y-4">
+              {fullscreenIntro && (
+                <>
+                  <div className="p-6 bg-background rounded-lg border">
+                    <div className="prose prose-lg dark:prose-invert max-w-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-medium [&_p]:my-3 [&_p]:leading-relaxed [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {fullscreenIntro.content}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                  {fullscreenIntro.tips && (
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                      <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-2 flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4" /> Tips
+                      </p>
+                      <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullscreenIntro.tips}</ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </CardContent>
