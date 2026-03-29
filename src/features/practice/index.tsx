@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui';
 import { Button, Input } from '../../components/ui';
-import { CheckCircle, Circle, Search, BarChart, Plus, Edit2, Trash2, Save, Code, Copy, Check, X, ChevronLeft, Star } from 'lucide-react';
+import { CheckCircle, Circle, Search, BarChart, Plus, Edit2, Trash2, Save, Code, Copy, Check, X, ChevronLeft, Star, Bot, Sparkles } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import Editor from '@monaco-editor/react';
 
@@ -79,6 +79,9 @@ export function Practice() {
   const [currentLang, setCurrentLang] = useState('python');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [aiReviewLoading, setAiReviewLoading] = useState(false);
+  const [aiReview, setAiReview] = useState<string | null>(null);
+  const [aiReviewError, setAiReviewError] = useState<string | null>(null);
 
   const getCodeKey = (topicId: string, problemId: string) => `${topicId}:${problemId}`;
 
@@ -225,6 +228,51 @@ export function Practice() {
   const closeCodeEditor = () => {
     saveCode();
     setExpandedProblemId(null);
+    setAiReview(null);
+    setAiReviewError(null);
+  };
+
+  const getAiReview = async () => {
+    if (!currentCode.trim()) {
+      setAiReviewError('Please write some code first');
+      return;
+    }
+
+    setAiReviewLoading(true);
+    setAiReviewError(null);
+    setAiReview(null);
+
+    try {
+      const problem = problems[selectedTopicId!]?.find(p => p.id === expandedProblemId);
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert code reviewer. Review the code and provide constructive feedback.'
+            },
+            {
+              role: 'user',
+              content: `Problem: ${problem?.name || 'Unknown'}\n\nLanguage: ${currentLang}\n\nCode:\n\`\`\`${currentLang}\n${currentCode}\n\`\`\`\n\nPlease review this code and provide:\n1. Code quality feedback\n2. Potential bugs or issues\n3. Suggestions for improvement\n4. Time complexity analysis if applicable`
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Failed to get review');
+      }
+
+      const data = await response.json();
+      setAiReview(data.choices[0].message.content);
+    } catch (err) {
+      setAiReviewError((err as Error).message);
+    } finally {
+      setAiReviewLoading(false);
+    }
   };
 
   const filteredProblems = useMemo(() => {
@@ -603,6 +651,24 @@ export function Practice() {
                                 <Save className="h-3 w-3 mr-1" />
                                 Save
                               </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={getAiReview}
+                                disabled={aiReviewLoading}
+                              >
+                                {aiReviewLoading ? (
+                                  <>
+                                    <Sparkles className="h-3 w-3 mr-1 animate-spin" />
+                                    Reviewing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Bot className="h-3 w-3 mr-1" />
+                                    AI Review
+                                  </>
+                                )}
+                              </Button>
                             </div>
                           </div>
                           <Editor
@@ -618,6 +684,26 @@ export function Practice() {
                               padding: { top: 8 }
                             }}
                           />
+                          {(aiReview || aiReviewError) && (
+                            <div className="mt-4 space-y-3">
+                              <div className="flex items-center gap-2">
+                                <Bot className="h-4 w-4 text-primary" />
+                                <span className="font-medium text-sm">AI Code Review</span>
+                              </div>
+                              {aiReviewError && (
+                                <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                                  {aiReviewError}
+                                </div>
+                              )}
+                              {aiReview && (
+                                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                                  <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm">
+                                    {aiReview}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
