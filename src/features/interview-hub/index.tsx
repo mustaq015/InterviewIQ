@@ -558,7 +558,7 @@ ${intros[0].content || 'Not set'}`;
           messages: [
             {
               role: 'system',
-              content: 'You are an expert interview coach. Generate professional, concise interview answers using the STAR method where appropriate. Format your response with the answer in markdown.'
+              content: `You are a friendly, experienced mentor helping someone prepare for their job interview. You speak in a natural, conversational tone - like a helpful friend who's been through many interviews. Avoid corporate jargon and robotic phrases. Make answers sound genuine, relatable, and human. Use simple words. Be direct and honest.`
             },
             {
               role: 'user',
@@ -566,17 +566,17 @@ ${intros[0].content || 'Not set'}`;
 Difficulty: ${difficulty || 'medium'}
 ${userContext}
 
-Generate a professional, well-structured interview answer. Include:
-1. A clear, concise main answer (using the user's profile above)
-2. Key points to remember
-3. Any relevant examples or tips
+Give me an answer I'd actually say in a real interview - something that sounds like ME, not a robot. Keep it conversational, natural, and honest. No buzzwords, no filler phrases. Just real talk.
 
-Format the output as:
-**Answer:** [Your answer here]
+Format it like this:
+**What I'd Say:**
+[Write it as if you're talking to a friend. First person, present tense, conversational. Don't start with "I am" or "My name is" - just dive in naturally]
 
-**Key Points:** [bullet points]
+**Why This Works:**
+[1-2 short bullet points on what makes this answer good]
 
-**Tips:** [any tips]`
+**Watch Out For:**
+[Common mistakes people make with this question - keep it real and helpful]`
             }
           ]
         })
@@ -590,17 +590,24 @@ Format the output as:
       const data = await response.json();
       const generated = data.choices[0].message.content;
       
-      const answerMatch = generated.match(/\*\*Answer:\*\*\s*([\s\S]*?)(?=\*\*Key Points:|$)/i);
-      const keyPointsMatch = generated.match(/\*\*Key Points:\*\*\s*([\s\S]*?)(?=\*\*Tips:|$)/i);
-      const tipsMatch = generated.match(/\*\*Tips:\*\*\s*([\s\S]*?)$/i);
+      const answerMatch = generated.match(/\*\*What I'd Say:\*\*\s*([\s\S]*?)(?=\*\*Why This Works:|$)/i);
+      const whyWorksMatch = generated.match(/\*\*Why This Works:\*\*\s*([\s\S]*?)(?=\*\*Watch Out For:|$)/i);
+      const watchOutMatch = generated.match(/\*\*Watch Out For:\*\*\s*([\s\S]*?)$/i);
 
       const answer = answerMatch ? answerMatch[1].trim() : generated;
-      const tips = keyPointsMatch ? keyPointsMatch[1].split('\n').map((t: string) => t.replace(/^[-*]\s*/, '').trim()).filter(Boolean) : [];
-      const tipsText = tipsMatch ? tipsMatch[1].trim() : '';
+      const tips = [];
+      if (whyWorksMatch) {
+        const whyLines = whyWorksMatch[1].split('\n').map((t: string) => t.replace(/^[-*]\s*/, '').trim()).filter(Boolean);
+        tips.push(...whyLines);
+      }
+      if (watchOutMatch) {
+        const watchLines = watchOutMatch[1].split('\n').map((t: string) => t.replace(/^[-*]\s*/, '').trim()).filter(Boolean);
+        tips.push(...watchLines);
+      }
 
       setAnswerEditData({
         answer: answer,
-        tips: [...tips, ...(tipsText ? [tipsText] : [])].slice(0, 10)
+        tips: tips.slice(0, 10)
       });
     } catch (err) {
       console.error('Failed to generate answer:', err);
