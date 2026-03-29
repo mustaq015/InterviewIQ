@@ -85,6 +85,9 @@ export function Practice() {
   const [aiReview, setAiReview] = useState<string | null>(null);
   const [aiReviewError, setAiReviewError] = useState<string | null>(null);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiExplaining, setAiExplaining] = useState(false);
+  const [queryExplanation, setQueryExplanation] = useState<string | null>(null);
+  const [queryExplanationError, setQueryExplanationError] = useState<string | null>(null);
 
   const getCodeKey = (topicId: string, problemId: string) => `${topicId}:${problemId}`;
 
@@ -239,6 +242,8 @@ export function Practice() {
     setExpandedProblemId(null);
     setAiReview(null);
     setAiReviewError(null);
+    setQueryExplanation(null);
+    setQueryExplanationError(null);
   };
 
   const getAiReview = async () => {
@@ -332,6 +337,59 @@ Generate code to solve this problem. Only output the code block with the solutio
       setAiReviewError((err as Error).message);
     } finally {
       setAiGenerating(false);
+    }
+  };
+
+  const explainQuery = async () => {
+    if (!currentCode.trim()) {
+      setQueryExplanationError('Please write a query first');
+      return;
+    }
+
+    setAiExplaining(true);
+    setQueryExplanationError(null);
+    setQueryExplanation(null);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert in SQL and data analysis. Explain queries clearly and concisely.'
+            },
+            {
+              role: 'user',
+              content: `Language: ${currentLang}
+
+Query to explain:
+\`\`\`${currentLang}
+${currentCode}
+\`\`\`
+
+Please explain this query in a clear, structured way covering:
+1. What the query does (brief summary)
+2. Step-by-step breakdown of each part
+3. Key functions/clauses used
+4. Expected output or result`
+            }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Failed to explain query');
+      }
+
+      const data = await response.json();
+      setQueryExplanation(data.choices[0].message.content);
+    } catch (err) {
+      setQueryExplanationError((err as Error).message);
+    } finally {
+      setAiExplaining(false);
     }
   };
 
@@ -747,6 +805,24 @@ Generate code to solve this problem. Only output the code block with the solutio
                                   </>
                                 )}
                               </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={explainQuery}
+                                disabled={aiExplaining}
+                              >
+                                {aiExplaining ? (
+                                  <>
+                                    <Sparkles className="h-3 w-3 mr-1 animate-spin" />
+                                    Explaining...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Bot className="h-3 w-3 mr-1" />
+                                    Explain Query
+                                  </>
+                                )}
+                              </Button>
                             </div>
                           </div>
                           <Editor
@@ -800,6 +876,26 @@ Generate code to solve this problem. Only output the code block with the solutio
                                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                                   <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm">
                                     {aiReview}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {(queryExplanation || queryExplanationError) && (
+                            <div className="mt-4 space-y-3">
+                              <div className="flex items-center gap-2">
+                                <Bot className="h-4 w-4 text-blue-500" />
+                                <span className="font-medium text-sm">Query Explanation</span>
+                              </div>
+                              {queryExplanationError && (
+                                <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                                  {queryExplanationError}
+                                </div>
+                              )}
+                              {queryExplanation && (
+                                <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                                  <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm">
+                                    {queryExplanation}
                                   </div>
                                 </div>
                               )}
