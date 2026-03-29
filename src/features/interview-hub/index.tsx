@@ -1347,6 +1347,13 @@ Format the output as:
                             ) : (
                               <>
                                 <button
+                                  onClick={(e) => { e.stopPropagation(); handleOpenEditAnswer(q, selectedTopic); setTimeout(() => generateAnswer(q.question, q.difficulty), 100); }}
+                                  className="p-1 hover:bg-secondary rounded text-primary"
+                                  title="Generate Answer with AI"
+                                >
+                                  <Sparkles className="h-3.5 w-3.5" />
+                                </button>
+                                <button
                                   onClick={(e) => { e.stopPropagation(); handleOpenEditAnswer(q, selectedTopic); }}
                                   className="p-1 hover:bg-secondary rounded text-muted-foreground hover:text-foreground"
                                   title="Edit Answer"
