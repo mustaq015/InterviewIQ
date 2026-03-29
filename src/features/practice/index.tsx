@@ -690,13 +690,29 @@ export function Practice() {
                               minimap: { enabled: false },
                               wordWrap: 'on',
                               padding: { top: 8 },
-                              suggest: { showStatusBar: false },
-                              inlineSuggest: { enabled: false },
-                              quickSuggestions: false,
-                              parameterHints: { enabled: false },
-                              hover: { enabled: false },
+                              links: false,
                               folding: false,
-                              links: false
+                              glyphMargin: false,
+                              lineDecorationsWidth: 0,
+                              lineNumbersMinChars: 3,
+                              renderLineHighlight: 'none',
+                              occurrencesHighlight: 'off',
+                              selectionHighlight: false,
+                              matchBrackets: 'never',
+                              cursorBlinking: 'smooth',
+                              smoothScrolling: true,
+                              contextmenu: true,
+                              'semanticHighlighting.enabled': false,
+                              bracketPairColorization: { enabled: false },
+                            }}
+                            onMount={(editor) => {
+                              editor.updateOptions({
+                                links: false,
+                                'editor.link.enabled': false,
+                              });
+                              try {
+                                editor.getAction('editor.action.openLink')?.disable();
+                              } catch (e) {}
                             }}
                           />
                           {(aiReview || aiReviewError) && (
