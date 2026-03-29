@@ -4,6 +4,8 @@ import { Button, Input } from '../../components/ui';
 import { CheckCircle, Circle, Search, BarChart, Plus, Edit2, Trash2, Save, Code, Copy, Check, X, ChevronLeft, Star, Bot, Sparkles } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import Editor from '@monaco-editor/react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Problem {
   id: string;
@@ -726,85 +728,109 @@ Please explain this query in a clear, structured way covering:
                       {isExpanded && (
                         <div className="border-t p-4 bg-muted/30">
                           <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <select
-                                value={currentLang}
-                                onChange={(e) => setCurrentLang(e.target.value)}
-                                className="h-8 px-2 rounded border border-input bg-background text-sm"
-                              >
-                                {languages.map(l => (
-                                  <option key={l.value} value={l.value}>{l.label}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(currentCode);
-                                  setCopied(true);
-                                  setTimeout(() => setCopied(false), 2000);
-                                }}
-                              >
-                                {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-                                {copied ? 'Copied!' : 'Copy'}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setIsDarkMode(!isDarkMode)}
-                              >
-                                {isDarkMode ? 'Light' : 'Dark'}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={closeCodeEditor}
-                              >
-                                <X className="h-3 w-3 mr-1" />
-                                Close
-                              </Button>
-                              <Button size="sm" onClick={() => { saveCode(); }}>
-                                <Save className="h-3 w-3 mr-1" />
-                                Save
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={generateCode}
-                                disabled={aiGenerating}
-                              >
-                                {aiGenerating ? (
-                                  <>
-                                    <Sparkles className="h-3 w-3 mr-1 animate-spin" />
-                                    Generating...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Sparkles className="h-3 w-3 mr-1" />
-                                    Generate Code
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={getAiReview}
-                                disabled={aiReviewLoading}
-                              >
-                                {aiReviewLoading ? (
-                                  <>
-                                    <Sparkles className="h-3 w-3 mr-1 animate-spin" />
-                                    Reviewing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Bot className="h-3 w-3 mr-1" />
-                                    AI Review
-                                  </>
-                                )}
-                              </Button>
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={currentLang}
+                                  onChange={(e) => setCurrentLang(e.target.value)}
+                                  className="h-9 px-3 rounded-lg border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                                >
+                                  {languages.map(l => (
+                                    <option key={l.value} value={l.value}>{l.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(currentCode);
+                                    setCopied(true);
+                                    setTimeout(() => setCopied(false), 2000);
+                                  }}
+                                  className="text-muted-foreground hover:text-foreground"
+                                >
+                                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setIsDarkMode(!isDarkMode)}
+                                  className="text-muted-foreground hover:text-foreground"
+                                >
+                                  {isDarkMode ? (
+                                    <span className="text-sm">Light</span>
+                                  ) : (
+                                    <span className="text-sm">Dark</span>
+                                  )}
+                                </Button>
+                                <div className="h-4 w-px bg-border mx-1" />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => { saveCode(); }}
+                                  className="gap-1.5"
+                                >
+                                  <Save className="h-3.5 w-3.5" />
+                                  Save
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={generateCode}
+                                  disabled={aiGenerating}
+                                  className="gap-1.5"
+                                >
+                                  {aiGenerating ? (
+                                    <>
+                                      <Sparkles className="h-3.5 w-3.5 animate-spin" />
+                                      Generating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="h-3.5 w-3.5" />
+                                      Generate
+                                    </>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={getAiReview}
+                                  disabled={aiReviewLoading}
+                                  className="gap-1.5"
+                                >
+                                  {aiReviewLoading ? (
+                                    <>
+                                      <Sparkles className="h-3.5 w-3.5 animate-spin" />
+                                      Reviewing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Bot className="h-3.5 w-3.5" />
+                                      Review
+                                    </>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={explainQuery}
+                                  disabled={aiExplaining}
+                                  className="gap-1.5"
+                                >
+                                  {aiExplaining ? (
+                                    <>
+                                      <Sparkles className="h-3.5 w-3.5 animate-spin" />
+                                      Explaining...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Bot className="h-3.5 w-3.5" />
+                                      Explain
+                                    </>
+                                  )}
+                                </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -825,77 +851,90 @@ Please explain this query in a clear, structured way covering:
                               </Button>
                             </div>
                           </div>
-                          <Editor
-                            height="300px"
-                            language={currentLang}
-                            value={currentCode}
-                            onChange={(v) => setCurrentCode(v || '')}
-                            theme={isDarkMode ? 'vs-dark' : 'light'}
-                            options={{
-                              fontSize: 13,
-                              minimap: { enabled: false },
-                              wordWrap: 'on',
-                              padding: { top: 8 },
-                              links: false,
-                              folding: false,
-                              glyphMargin: false,
-                              lineDecorationsWidth: 0,
-                              lineNumbersMinChars: 3,
-                              renderLineHighlight: 'none',
-                              occurrencesHighlight: 'off',
-                              selectionHighlight: false,
-                              matchBrackets: 'never',
-                              cursorBlinking: 'smooth',
-                              smoothScrolling: true,
-                              contextmenu: true,
-                              'semanticHighlighting.enabled': false,
-                              bracketPairColorization: { enabled: false },
-                            }}
-                            onMount={(editor) => {
-                              editor.updateOptions({
+                          <div className={`rounded-xl border overflow-hidden ${isDarkMode ? 'border-zinc-700' : 'border-border'}`}>
+                            <Editor
+                              height="350px"
+                              language={currentLang}
+                              value={currentCode}
+                              onChange={(v) => setCurrentCode(v || '')}
+                              theme={isDarkMode ? 'vs-dark' : 'vs'}
+                              options={{
+                                fontSize: 14,
+                                fontFamily: "'Fira Code', 'Cascadia Code', Consolas, monospace",
+                                minimap: { enabled: false },
+                                wordWrap: 'on',
+                                padding: { top: 16, bottom: 16 },
                                 links: false,
-                                'editor.link.enabled': false,
-                              });
-                              try {
-                                editor.getAction('editor.action.openLink')?.disable();
-                              } catch (e) {}
-                            }}
-                          />
+                                folding: true,
+                                glyphMargin: false,
+                                lineDecorationsWidth: 8,
+                                lineNumbersMinChars: 3,
+                                renderLineHighlight: 'gutter',
+                                occurrencesHighlight: 'off',
+                                selectionHighlight: false,
+                                matchBrackets: 'always',
+                                cursorBlinking: 'smooth',
+                                smoothScrolling: true,
+                                contextmenu: true,
+                                'semanticHighlighting.enabled': false,
+                                bracketPairColorization: { enabled: true },
+                                formatOnPaste: true,
+                                formatOnType: true,
+                              }}
+                              onMount={(editor) => {
+                                editor.updateOptions({
+                                  links: false,
+                                  'editor.link.enabled': false,
+                                });
+                                try {
+                                  editor.getAction('editor.action.openLink')?.disable();
+                                } catch (e) {}
+                              }}
+                            />
+                          </div>
                           {(aiReview || aiReviewError) && (
-                            <div className="mt-4 space-y-3">
-                              <div className="flex items-center gap-2">
-                                <Bot className="h-4 w-4 text-primary" />
-                                <span className="font-medium text-sm">AI Code Review</span>
+                            <div className="mt-4 border-t pt-4">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="p-1.5 rounded-full bg-primary/10">
+                                  <Bot className="h-4 w-4 text-primary" />
+                                </div>
+                                <span className="font-semibold text-sm text-foreground">AI Code Review</span>
                               </div>
                               {aiReviewError && (
-                                <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
                                   {aiReviewError}
                                 </div>
                               )}
                               {aiReview && (
-                                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                                  <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm">
-                                    {aiReview}
+                                <div className="bg-muted/30 rounded-xl border border-border overflow-hidden">
+                                  <div className="p-4 text-sm text-foreground/90 leading-relaxed [&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:first:mt-0 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-medium [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:my-2 [&_p]:first:mt-0 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_pre]:bg-zinc-900 [&_pre]:text-zinc-100 [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-3 [&_pre]:text-xs [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_a]:text-primary [&_a]:underline [&_strong]:font-semibold">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                      {aiReview}
+                                    </ReactMarkdown>
                                   </div>
                                 </div>
                               )}
                             </div>
                           )}
                           {(queryExplanation || queryExplanationError) && (
-                            <div className="mt-4 space-y-3">
-                              <div className="flex items-center gap-2">
-                                <Bot className="h-4 w-4 text-blue-500" />
-                                <span className="font-medium text-sm">Query Explanation</span>
+                            <div className="mt-4 border-t pt-4">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="p-1.5 rounded-full bg-blue-500/10">
+                                  <Bot className="h-4 w-4 text-blue-500" />
+                                </div>
+                                <span className="font-semibold text-sm text-foreground">Query Explanation</span>
                               </div>
                               {queryExplanationError && (
-                                <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
                                   {queryExplanationError}
                                 </div>
                               )}
                               {queryExplanation && (
-                                <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20">
-                                  <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm">
-                                    {queryExplanation}
+                                <div className="bg-muted/30 rounded-xl border border-border overflow-hidden">
+                                  <div className="p-4 text-sm text-foreground/90 leading-relaxed [&_h1]:text-base [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:first:mt-0 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-medium [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:my-2 [&_p]:first:mt-0 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_pre]:bg-zinc-900 [&_pre]:text-zinc-100 [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-3 [&_pre]:text-xs [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_a]:text-blue-500 [&_a]:underline [&_strong]:font-semibold [&_table]:w-full [&_table]:text-xs [&_thead]:bg-muted [&_th]:p-2 [&_th]:text-left [&_td]:p-2 [&_td]:border-t [&_tr]:border-b">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                      {queryExplanation}
+                                    </ReactMarkdown>
                                   </div>
                                 </div>
                               )}
