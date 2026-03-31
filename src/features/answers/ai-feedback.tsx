@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui';
 import { Bot, Settings, Sparkles, Copy, Check } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface AIConfig {
   apiKey: string;
@@ -180,15 +182,43 @@ export function AIFeedback({ question, answer, onApply }: AIFeedbackProps) {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert interview coach. Provide constructive feedback on interview answers and suggest improvements.'
+              content: `You are an expert interview coach and hiring manager with 15+ years of experience. You provide detailed, constructive feedback on interview answers.
+
+## Response Format
+Format your response in proper Markdown:
+
+### 📋 Feedback Summary
+**Strengths:**
+- [List what the candidate did well]
+
+**Areas for Improvement:**
+- [List specific weaknesses with actionable suggestions]
+
+### 🎯 What Interviewers Look For
+[Key criteria interviewers evaluate in answers like this]
+
+### 💡 Suggested Approach
+[How to structure a stronger answer, e.g., STAR method, specific frameworks]
+
+### ✨ Example Answer
+[Provide a complete, polished example answer in Markdown with headers, bullet points, and emphasis where appropriate]
+
+---
+*Remember: Interviewers typically spend 30-60 seconds per answer. Clarity and relevance are key.*`
             },
             {
               role: 'user',
-              content: `Question: ${question}\n\nMy Answer: ${answer}\n\nPlease provide:\n1. Feedback on this answer (strengths and weaknesses)\n2. Suggestions for improvement\n3. A better example answer if applicable`
+              content: `## Interview Question
+${question}
+
+## My Answer
+${answer}
+
+Please analyze this answer and provide detailed feedback in Markdown format as specified in your system prompt.`
             }
           ],
           temperature: 0.7,
-          max_tokens: 1000,
+          max_tokens: 1500,
         }),
       });
 
@@ -227,15 +257,37 @@ export function AIFeedback({ question, answer, onApply }: AIFeedbackProps) {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert interview coach. Write improved, professional answers to interview questions.'
+              content: `You are an expert interview coach helping candidates prepare for technical and behavioral interviews.
+
+## Answer Format Requirements
+Write improved answers in proper Markdown format:
+
+### 📝 Improved Answer
+
+**Key Points to Cover:**
+- [2-4 bullet points of main concepts to address]
+
+**Structured Response:**
+[Full answer using STAR method where applicable, with clear headers and formatting]
+
+> **Pro Tip:** [One actionable advice for this type of question]
+
+---
+*Target length: 45-90 seconds when spoken. Be specific but concise.*`
             },
             {
               role: 'user',
-              content: `Question: ${question}\n\nOriginal Answer: ${answer}\n\nWrite an improved, more effective answer to this interview question. Make it concise but impactful, using the STAR method where appropriate.`
+              content: `## Interview Question
+${question}
+
+## Original Answer
+${answer}
+
+Improve this answer following the Markdown format specified in your system prompt. Make it more compelling, structured, and interview-ready. Use the STAR method (Situation, Task, Action, Result) where applicable.`
             }
           ],
           temperature: 0.7,
-          max_tokens: 800,
+          max_tokens: 1200,
         }),
       });
 
@@ -294,10 +346,15 @@ export function AIFeedback({ question, answer, onApply }: AIFeedbackProps) {
       {feedback && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Feedback</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              AI Feedback
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="whitespace-pre-wrap text-sm">{feedback}</div>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{feedback}</ReactMarkdown>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -305,7 +362,10 @@ export function AIFeedback({ question, answer, onApply }: AIFeedbackProps) {
       {improvedAnswer && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm">Improved Answer</CardTitle>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Bot className="h-4 w-4 text-primary" />
+              Improved Answer
+            </CardTitle>
             <Button 
               variant="ghost" 
               size="icon"
@@ -315,7 +375,9 @@ export function AIFeedback({ question, answer, onApply }: AIFeedbackProps) {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="whitespace-pre-wrap text-sm">{improvedAnswer}</div>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{improvedAnswer}</ReactMarkdown>
+            </div>
             {onApply && (
               <Button 
                 onClick={() => onApply(improvedAnswer)} 

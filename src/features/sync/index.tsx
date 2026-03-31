@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui';
-import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Github, Key, Database } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Github, Key, Database, LogOut, Link } from 'lucide-react';
 import { githubSync } from '../../services';
 import { format } from 'date-fns';
 
 export function Sync() {
-  const { syncState, githubConfig, configureGitHub, sync } = useAppStore();
+  const { syncState, githubConfig, configureGitHub, disconnectGitHub, sync } = useAppStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -38,11 +38,8 @@ export function Sync() {
     setTestResult(null);
     
     try {
-      const success = await githubSync.testConnection();
-      setTestResult({
-        success,
-        message: success ? 'Connection successful!' : 'Connection failed',
-      });
+      const result = await githubSync.testConnection();
+      setTestResult(result);
     } catch (error) {
       setTestResult({
         success: false,
@@ -57,14 +54,27 @@ export function Sync() {
     await sync();
   };
 
+  const handleDisconnect = () => {
+    if (confirm('Disconnect GitHub sync? Your local data will not be deleted.')) {
+      disconnectGitHub();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Sync</h2>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <Key className="mr-2 h-4 w-4" />
-          Configure GitHub
-        </Button>
+        {githubConfig ? (
+          <Button variant="destructive" onClick={handleDisconnect}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Disconnect
+          </Button>
+        ) : (
+          <Button onClick={() => setIsDialogOpen(true)}>
+            <Key className="mr-2 h-4 w-4" />
+            Configure GitHub
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -90,8 +100,8 @@ export function Sync() {
                 </span>
               ) : githubConfig ? (
                 <span className="flex items-center gap-2 text-sm text-green-500">
-                  <CheckCircle className="h-4 w-4" />
-                  Connected
+                  <Link className="h-4 w-4" />
+                  Auto-sync enabled
                 </span>
               ) : (
                 <span className="flex items-center gap-2 text-sm text-muted-foreground">

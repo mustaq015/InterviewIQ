@@ -92,7 +92,7 @@ export function InterviewCountdown({ onNavigate }: InterviewCountdownProps) {
                   {getTypeIcon(interview.type)}
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{company?.name || 'Unknown Company'}</p>
+                  <p className="text-sm font-medium">{company?.name || 'Unknown'}</p>
                   <p className="text-xs opacity-75 capitalize">
                     {isToday ? 'Today' : isTomorrow ? 'Tomorrow' : format(date, 'MMM d')} at {format(date, 'h:mm a')}
                   </p>

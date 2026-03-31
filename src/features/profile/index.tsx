@@ -4,7 +4,7 @@ import {
   Plus, Pencil, Trash2, X, Copy, Check, Code, FileCode, Sun, Moon,
   Download, Printer, Braces, Sparkles, ChevronDown, Briefcase, GraduationCap,
   Wrench, FileText as FileTextIcon, GripVertical, User, Save, MessageSquare,
-  Maximize2, Minimize2, Lightbulb, ArrowUpDown
+  Maximize2, Minimize2, Lightbulb, ArrowUpDown, ChevronRight
 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import type { Profile, Experience, Education } from '../../types';
@@ -182,7 +182,7 @@ export function Profile() {
   const [showResumeMenu, setShowResumeMenu] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [newResumeName, setNewResumeName] = useState('');
-  const [activeSection, setActiveSection] = useState<'editor' | 'preview' | 'experience' | 'education' | 'skills' | 'projects' | 'self-intro'>('editor');
+  const [activeSection, setActiveSection] = useState<'editor' | 'preview' | 'experience' | 'education' | 'skills' | 'projects' | 'project-documents'>('editor');
   const [editorTheme, setEditorTheme] = useState<'light' | 'dark'>('light');
   const [copied, setCopied] = useState(false);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
@@ -228,7 +228,7 @@ export function Profile() {
   };
 
   const handleDeleteIntro = (id: string) => {
-    if (confirm('Delete this self-introduction?')) {
+    if (confirm('Delete this project document?')) {
       setSelfIntros(selfIntros.filter(i => i.id !== id));
     }
   };
@@ -825,7 +825,7 @@ export function Profile() {
     { key: 'education' as const, label: 'Education', icon: <GraduationCap className="h-4 w-4" /> },
     { key: 'skills' as const, label: 'Skills', icon: <Wrench className="h-4 w-4" /> },
     { key: 'projects' as const, label: 'Projects', icon: <FileTextIcon className="h-4 w-4" /> },
-    { key: 'self-intro' as const, label: 'Self Intro', icon: <MessageSquare className="h-4 w-4" /> },
+    { key: 'project-documents' as const, label: 'Project Docs', icon: <MessageSquare className="h-4 w-4" /> },
   ];
 
   return (
@@ -960,11 +960,11 @@ export function Profile() {
         </DialogContent>
       </Dialog>
 
-      {/* Self Introduction Dialog */}
+      {/* Project Documents Dialog */}
       <Dialog open={isIntroDialogOpen} onOpenChange={(open) => { if (!open) { setIsIntroDialogOpen(false); setEditingIntro(null); setIntroForm({ title: '', content: '', tips: '' }); } }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingIntro ? 'Edit Self Introduction' : 'Create Self Introduction'}</DialogTitle>
+            <DialogTitle>{editingIntro ? 'Edit Project Documents' : 'Create Project Documents'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -980,7 +980,7 @@ export function Profile() {
               <Textarea
                 value={introForm.content}
                 onChange={(e) => setIntroForm({ ...introForm, content: e.target.value })}
-                placeholder="Write your self-introduction content here..."
+                placeholder="Write your project document content here..."
                 className="min-h-[200px] font-mono text-sm"
               />
             </div>
@@ -1092,47 +1092,45 @@ export function Profile() {
           </Card>
         )}
 
-        {/* Self Introduction Manager */}
-        {activeSection === 'self-intro' && (
-          <Card className="h-[calc(100vh-220px)] overflow-hidden relative">
-            <CardHeader className="flex flex-row items-center justify-between py-4 border-b bg-muted/30">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Self Introductions
-              </CardTitle>
-              <Button size="sm" onClick={openNewIntro}>
-                <Plus className="h-4 w-4 mr-1" /> Add File
-              </Button>
-            </CardHeader>
-            <CardContent className="h-[calc(100%-80px)] overflow-hidden p-0">
-              {selfIntros.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-muted-foreground p-6">
-                  <div className="text-center">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No files added yet</p>
-                    <p className="text-sm mt-1">Add your self-introduction files with tips</p>
-                    <Button variant="outline" size="sm" onClick={openNewIntro} className="mt-4">
-                      <Plus className="h-4 w-4 mr-1" /> Add Your First File
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex h-full">
-                  {/* Left Side - File List - Always visible */}
-                  <div className="w-72 border-r overflow-auto transition-all duration-300 flex-shrink-0">
+        {/* Project Documents Manager */}
+        {activeSection === 'project-documents' && (
+          <Card className="h-[calc(100vh-160px)] overflow-hidden relative [&>div]:!p-0">
+            {!fullscreenIntro ? (
+              <>
+                <CardHeader className="flex flex-row items-center justify-between py-4 border-b bg-muted/30">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Project Documents
+                  </CardTitle>
+                  <Button size="sm" onClick={openNewIntro}>
+                    <Plus className="h-4 w-4 mr-1" /> Add File
+                  </Button>
+                </CardHeader>
+                <CardContent className="h-[calc(100%-80px)] overflow-hidden p-0">
+                  {selfIntros.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-muted-foreground p-6">
+                      <div className="text-center">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No files added yet</p>
+                        <p className="text-sm mt-1">Add your project documents with tips</p>
+                        <Button variant="outline" size="sm" onClick={openNewIntro} className="mt-4">
+                          <Plus className="h-4 w-4 mr-1" /> Add Your First File
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
                     <div className="p-3 space-y-2">
                       {selfIntros.map((intro) => (
                         <div 
                           key={intro.id} 
-                          className={`p-3 rounded-lg cursor-pointer transition-all border ${
-                            fullscreenIntro?.id === intro.id 
-                              ? 'bg-primary/10 border-primary shadow-sm' 
-                              : 'bg-muted/50 hover:bg-muted border-transparent'
-                          }`}
+                          className="p-3 rounded-lg cursor-pointer transition-all border bg-muted/50 hover:bg-muted border-transparent"
                           onClick={() => setFullscreenIntro(intro)}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-medium text-sm truncate flex-1">{intro.title}</h3>
+                            <div className="flex items-center gap-2">
+                              <FileTextIcon className="h-4 w-4 text-primary" />
+                              <h3 className="font-medium text-sm truncate">{intro.title}</h3>
+                            </div>
                             <div className="flex gap-1 flex-shrink-0">
                               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); openEditIntro(intro); }} title="Edit">
                                 <Pencil className="h-3 w-3" />
@@ -1142,65 +1140,62 @@ export function Profile() {
                               </Button>
                             </div>
                           </div>
-                          <p className="text-[10px] text-muted-foreground mt-1">
+                          <p className="text-[10px] text-muted-foreground mt-1 ml-6">
                             {new Date(intro.updatedAt).toLocaleDateString()}
                             {intro.tips && <span className="ml-2 text-yellow-600">• Tips</span>}
                           </p>
                         </div>
                       ))}
                     </div>
+                  )}
+                </CardContent>
+              </>
+            ) : (
+              /* Full Window View */
+              <div className="h-full flex flex-col bg-background">
+                {/* Header */}
+                <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => setFullscreenIntro(null)} title="Back to List">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <FileTextIcon className="h-5 w-5" />
+                      <span className="font-medium">{fullscreenIntro.title}</span>
+                    </div>
                   </div>
-                  {/* Right Side - Content Viewer or Empty State */}
-                  <div className="flex-1 overflow-hidden bg-background/50 flex flex-col">
-                    {fullscreenIntro ? (
-                      <>
-                        {/* VS Code Style Header */}
-                        <div className="bg-muted/80 border-b px-4 py-2 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <FileTextIcon className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium">{fullscreenIntro.title}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyIntro(fullscreenIntro)} title="Copy">
-                              {copiedIntro ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFullscreenIntro(null)} title="Close">
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                        {/* Content Area - Full Width */}
-                        <div className="flex-1 overflow-auto p-6">
-                          <div className="prose prose-lg dark:prose-invert max-w-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-medium [&_p]:my-3 [&_p]:leading-relaxed [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {fullscreenIntro.content}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                        {/* Tips Section */}
-                        {fullscreenIntro.tips && (
-                          <div className="border-t p-4 bg-yellow-50/50 dark:bg-yellow-900/10">
-                            <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-2 flex items-center gap-2">
-                              <Lightbulb className="h-4 w-4" /> Tips
-                            </p>
-                            <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullscreenIntro.tips}</ReactMarkdown>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-muted-foreground">
-                        <div className="text-center">
-                          <FileTextIcon className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                          <p>Select a file to view</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => handleCopyIntro(fullscreenIntro)} title="Copy">
+                      {copiedIntro ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => openEditIntro(fullscreenIntro)} title="Edit">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                {/* Content - Full height to bottom */}
+                <div className="flex-1 overflow-auto pb-0">
+                  <div className="max-w-7xl mx-auto px-6">
+                    <div className="prose prose-base dark:prose-invert max-w-none [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-2xl [&_h2]:font-semibold [&_h3]:text-xl [&_h3]:font-medium [&_p]:!my-1 [&_p]:leading-relaxed [&_ul]:!my-1 [&_ol]:!my-1 [&_li]:!my-0 [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_a]:text-primary [&_a]:underline [&_p:last-child]:!mb-0">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {fullscreenIntro.content}
+                      </ReactMarkdown>
+                    </div>
+                    {/* Tips Section */}
+                    {fullscreenIntro.tips && (
+                      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                        <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-1 flex items-center gap-2">
+                          <Lightbulb className="h-5 w-5" /> Tips
+                        </p>
+                        <div className="text-base prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullscreenIntro.tips}</ReactMarkdown>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
-              )}
-            </CardContent>
+              </div>
+            )}
           </Card>
         )}
 

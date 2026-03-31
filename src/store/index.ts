@@ -13,11 +13,15 @@ interface AppState {
   
   syncState: SyncState;
   githubConfig: GitHubConfig | null;
+  githubPassword: string | null;
   isDarkMode: boolean;
 
   checklist: ChecklistItem[];
   flashcards: Flashcard[];
   streak: StreakData;
+
+  syncAllData: () => Promise<void>;
+  startPeriodicSync: () => void;
 
   loadData: () => Promise<void>;
   
@@ -38,7 +42,9 @@ interface AppState {
   deleteInterview: (id: number) => Promise<void>;
 
   configureGitHub: (config: GitHubConfig, password: string) => void;
+  disconnectGitHub: () => void;
   sync: () => Promise<void>;
+  autoSync: () => Promise<void>;
   toggleDarkMode: () => void;
 
   toggleChecklistItem: (id: number) => void;
@@ -103,6 +109,22 @@ const saveToStorage = (key: string, value: unknown) => {
   }
 };
 
+const removeFromStorage = (key: string) => {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {
+    console.error('Storage remove failed:', e);
+  }
+};
+
+const GITHUB_CONFIG_KEY = 'interviewiq_github_config';
+const GITHUB_PASSWORD_KEY = 'interviewiq_github_password';
+
+let autoSyncTimeout: ReturnType<typeof setTimeout> | null = null;
+let periodicSyncInterval: ReturnType<typeof setInterval> | null = null;
+const AUTO_SYNC_DELAY = 2000;
+const PERIODIC_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
 export const useAppStore = create<AppState>((set, get) => ({
   companies: [],
   questions: [],
@@ -115,7 +137,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     isSyncing: false,
     pendingChanges: 0
   },
-  githubConfig: null,
+  githubConfig: loadFromStorage<GitHubConfig | null>(GITHUB_CONFIG_KEY, null),
+  githubPassword: loadFromStorage<string | null>(GITHUB_PASSWORD_KEY, null),
   isDarkMode: loadFromStorage('interviewiq_darkMode', false),
 
   checklist: loadFromStorage('interviewiq_checklist', DEFAULT_CHECKLIST),
@@ -154,78 +177,117 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  autoSync: async () => {
+    const { githubConfig, githubPassword, syncState } = get();
+    
+    if (!githubConfig || !githubPassword || syncState.isSyncing) {
+      return;
+    }
+
+    if (autoSyncTimeout) {
+      clearTimeout(autoSyncTimeout);
+    }
+
+    autoSyncTimeout = setTimeout(async () => {
+      await get().sync();
+    }, AUTO_SYNC_DELAY);
+  },
+
   addCompany: async (company) => {
     const id = await db.addCompany(company);
     await get().loadData();
+    get().autoSync();
     return id;
   },
 
   updateCompany: async (id, updates) => {
     await db.updateCompany(id, updates);
     await get().loadData();
+    get().autoSync();
   },
 
   deleteCompany: async (id) => {
     await db.deleteCompany(id);
     await get().loadData();
+    get().autoSync();
   },
 
   addQuestion: async (question) => {
     const id = await db.addQuestion(question);
     await get().loadData();
+    get().autoSync();
     return id;
   },
 
   updateQuestion: async (id, updates) => {
     await db.updateQuestion(id, updates);
     await get().loadData();
+    get().autoSync();
   },
 
   deleteQuestion: async (id) => {
     await db.deleteQuestion(id);
     await get().loadData();
+    get().autoSync();
   },
 
   addAnswer: async (answer) => {
     const id = await db.addAnswer(answer);
     await get().loadData();
+    get().autoSync();
     return id;
   },
 
   updateAnswer: async (id, updates) => {
     await db.updateAnswer(id, updates);
     await get().loadData();
+    get().autoSync();
   },
 
   deleteAnswer: async (id) => {
     await db.deleteAnswer(id);
     await get().loadData();
+    get().autoSync();
   },
 
   addInterview: async (interview) => {
     const id = await db.addInterview(interview);
     await get().loadData();
+    get().autoSync();
     return id;
   },
 
   updateInterview: async (id, updates) => {
     await db.updateInterview(id, updates);
     await get().loadData();
+    get().autoSync();
   },
 
   deleteInterview: async (id) => {
     await db.deleteInterview(id);
     await get().loadData();
+    get().autoSync();
   },
 
   configureGitHub: (config, password) => {
     githubSync.configure(config, password);
-    set({ githubConfig: config });
+    saveToStorage(GITHUB_CONFIG_KEY, config);
+    saveToStorage(GITHUB_PASSWORD_KEY, password);
+    set({ githubConfig: config, githubPassword: password });
+  },
+
+  disconnectGitHub: () => {
+    githubSync.configure({ token: '', owner: '', repo: '', branch: '' }, '');
+    removeFromStorage(GITHUB_CONFIG_KEY);
+    removeFromStorage(GITHUB_PASSWORD_KEY);
+    set({ githubConfig: null, githubPassword: null });
   },
 
   sync: async () => {
-    const { companies, questions, answers, interviews } = get();
+    const { companies, questions, answers, interviews, githubPassword } = get();
     
+    if (!githubPassword) return;
+
     set(state => ({
       syncState: { ...state.syncState, isSyncing: true, syncError: undefined }
     }));
@@ -261,6 +323,62 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  syncAllData: async () => {
+    const { companies, questions, answers, interviews, checklist, flashcards, streak, githubPassword } = get();
+    
+    if (!githubPassword) return;
+
+    set(state => ({
+      syncState: { ...state.syncState, isSyncing: true, syncError: undefined }
+    }));
+
+    try {
+      const syncData = {
+        version: 1,
+        companies,
+        questions,
+        answers,
+        interviews,
+        checklist,
+        flashcards,
+        streak,
+        lastUpdated: new Date().toISOString()
+      };
+
+      await githubSync.fullSync(syncData);
+
+      set({
+        syncState: {
+          isSyncing: false,
+          lastSyncAt: new Date(),
+          syncError: undefined,
+          pendingChanges: 0
+        }
+      });
+    } catch (error) {
+      set(state => ({
+        syncState: {
+          ...state.syncState,
+          isSyncing: false,
+          syncError: (error as Error).message
+        }
+      }));
+    }
+  },
+
+  startPeriodicSync: () => {
+    if (periodicSyncInterval) {
+      clearInterval(periodicSyncInterval);
+    }
+    
+    periodicSyncInterval = setInterval(() => {
+      const { githubConfig, githubPassword } = get();
+      if (githubConfig && githubPassword) {
+        get().syncAllData();
+      }
+    }, PERIODIC_SYNC_INTERVAL);
+  },
+
   toggleDarkMode: () => {
     const newValue = !get().isDarkMode;
     saveToStorage('interviewiq_darkMode', newValue);
@@ -273,6 +391,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     );
     saveToStorage('interviewiq_checklist', checklist);
     set({ checklist });
+    get().autoSync();
   },
 
   addChecklistItem: (text, category) => {
@@ -282,6 +401,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const updated = [...checklist, newItem];
     saveToStorage('interviewiq_checklist', updated);
     set({ checklist: updated });
+    get().autoSync();
   },
 
   updateChecklistItem: (id, text, category) => {
@@ -290,18 +410,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     );
     saveToStorage('interviewiq_checklist', checklist);
     set({ checklist });
+    get().autoSync();
   },
 
   deleteChecklistItem: (id) => {
     const checklist = get().checklist.filter(item => item.id !== id);
     saveToStorage('interviewiq_checklist', checklist);
     set({ checklist });
+    get().autoSync();
   },
 
   resetChecklist: () => {
     const checklist = get().checklist.map(item => ({ ...item, done: false }));
     saveToStorage('interviewiq_checklist', checklist);
     set({ checklist });
+    get().autoSync();
   },
 
   toggleFlashcardKnown: (id) => {
@@ -310,6 +433,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     );
     saveToStorage('interviewiq_flashcards', flashcards);
     set({ flashcards });
+    get().autoSync();
   },
 
   addFlashcard: (q, a, tag) => {
@@ -319,6 +443,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const updated = [...flashcards, newCard];
     saveToStorage('interviewiq_flashcards', updated);
     set({ flashcards: updated });
+    get().autoSync();
   },
 
   updateFlashcard: (id, updates) => {
@@ -327,12 +452,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     );
     saveToStorage('interviewiq_flashcards', flashcards);
     set({ flashcards });
+    get().autoSync();
   },
 
   deleteFlashcard: (id) => {
     const flashcards = get().flashcards.filter(card => card.id !== id);
     saveToStorage('interviewiq_flashcards', flashcards);
     set({ flashcards });
+    get().autoSync();
   },
 
   updateStreak: () => {
@@ -351,3 +478,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ streak: newStreak });
   }
 }));
+
+const initializeGitHub = async () => {
+  const config = loadFromStorage<GitHubConfig | null>(GITHUB_CONFIG_KEY, null);
+  const password = loadFromStorage<string | null>(GITHUB_PASSWORD_KEY, null);
+  
+  if (config && password) {
+    githubSync.configure(config, password);
+    
+    // Start periodic sync
+    const store = useAppStore.getState();
+    store.startPeriodicSync();
+    
+    // Auto-sync on load
+    await store.syncAllData();
+  }
+};
+
+initializeGitHub();

@@ -206,13 +206,7 @@ export function InterviewHub() {
   const [predefinedEditData, setPredefinedEditData] = useState<{ question: string; answer: string; tips: string }>({ question: '', answer: '', tips: '' });
   const [editingPredefinedId, setEditingPredefinedId] = useState<string | null>(null);
   const [generatingAnswer, setGeneratingAnswer] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('custom-answers');
-      localStorage.removeItem('custom-interview-questions');
-    }
-  }, []);
+  const [showMarkdownPreview, setShowMarkdownPreview] = useState(true);
 
   useEffect(() => {
     if (activeTimer) {
@@ -356,9 +350,16 @@ export function InterviewHub() {
       });
     
     const newCustomQuestions = custom
-      .filter(q => !predefinedIds.has(q.id) && !hiddenQuestions.includes(q.id));
+      .filter(q => !predefinedIds.has(q.id) && !hiddenQuestions.includes(q.id))
+      .map(q => {
+        const customAnswer = customAnswers[`${topicId}:${q.id}`];
+        if (customAnswer) {
+          return { ...q, answer: customAnswer.answer, tips: customAnswer.tips, isCustom: true };
+        }
+        return { ...q, isCustom: true };
+      });
     
-    return [...mergedQuestions, ...newCustomQuestions.map(q => ({ ...q, isCustom: true }))];
+    return [...mergedQuestions, ...newCustomQuestions];
   };
 
   const getQuestionCustomAnswer = (topicId: string, questionId: string) => {
@@ -476,6 +477,7 @@ export function InterviewHub() {
       });
     }
     setEditingAnswer(question.id);
+    setShowMarkdownPreview(true);
   };
 
   const handleOpenPredefinedEdit = (question: InterviewQuestion, topicId: string) => {
@@ -520,7 +522,7 @@ export function InterviewHub() {
     setEditingAnswer(null);
   };
 
-  const generateAnswer = async (question: string, difficulty?: string) => {
+  const generateAnswer = async (question: string, difficulty?: string, existingAnswer?: string) => {
     setGeneratingAnswer(true);
     
     let userContext = '';
@@ -550,6 +552,8 @@ ${intros[0].content || 'Not set'}`;
       console.error('Failed to load user context:', e);
     }
     
+    const hasExistingAnswer = existingAnswer && existingAnswer.trim().length > 0;
+    
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -558,29 +562,66 @@ ${intros[0].content || 'Not set'}`;
           messages: [
             {
               role: 'system',
-              content: `You are a friendly, experienced mentor helping someone prepare for their job interview. You speak in a natural, conversational tone - like a helpful friend who's been through many interviews. Keep answers SHORT, direct, and memorable. Use bullet points for clarity. Avoid corporate jargon. Be direct and honest.`
+              content: `You are a senior data engineer with 4+ years of real-world experience. You specialize in building robust ETL pipelines, data warehousing, and cloud data solutions (AWS/GCP/Azure, Spark, Databricks, Snowflake, dbt, Kafka, Airflow).
+
+## Response Style - NATURAL AND CONVERSATIONAL
+- Write like you're talking to a colleague, NOT filling a template
+- Start with a natural hook or brief context
+- Explain concepts through stories and examples, not bullet points
+- Use "I", "In my experience", "I've found that" naturally
+- Sound confident but not robotic - avoid corporate speak
+- Include specific numbers, metrics, and real trade-offs from actual work
+- Keep it conversational - as if explaining to someone smart but not a specialist
+
+## Format (ALWAYS use this structure with proper Markdown)
+# [Main topic/question in 2-3 words]
+
+## [Brief intro - one sentence hook]
+
+---
+
+## [Key insight 1 - explain naturally with an example]
+## [Key insight 2 - another practical example or trade-off]
+## [Key insight 3 - lessons learned or what to avoid]
+
+---
+
+## Real Example
+## [Share a specific story: "At my previous job...", "I once had to...", "We built a pipeline that..."]
+## Include metrics: "processed 10M rows daily", "reduced latency by 40%", etc.
+
+---
+
+## What I'd Say (in one short paragraph)
+## [Natural spoken answer - how you'd actually say it in an interview, 45-90 seconds worth]
+
+---
+
+## Pro Tips
+## [1-2 things interviewers love to hear]
+## [Common mistakes to avoid]
+
+---
+*Format: Markdown | Duration: 45-90 seconds when spoken*`
             },
             {
               role: 'user',
-              content: `Question: ${question}
-Difficulty: ${difficulty || 'medium'}
+              content: `## Interview Question
+**Topic:** ${selectedTopic || 'General'}
+**Difficulty:** ${difficulty || 'medium'}
+
+${question}
+
 ${userContext}
 
-Give me a SHORT, CONVERSATIONAL interview answer with bullet points.
+${hasExistingAnswer ? `## Existing Answer to Improve
+${existingAnswer}
 
-Format STRICTLY like this (use actual bullet points):
-**What I'd Say:**
-• [Short conversational opener - 1-2 sentences max]
-• [Key point 1 - specific and real]
-• [Key point 2 - specific and real]
-• [Short closing - 1 sentence]
+Analyze this answer and rewrite it to be more natural, conversational, and impactful. Make it sound like you're having a real conversation, not reading from a template. Keep the good parts, fix the awkward parts, and add real-world depth.` : `You're a data engineer with 4+ years of experience. Answer this interview question naturally - like you're explaining it to a smart friend over coffee. No formal essay style. Sound human.`}
 
-**Key Points:**
-• [Why this works - 1 sentence]
-• [What interviewers look for - 1 sentence]
-• [Common mistake to avoid - 1 sentence]
+---
 
-Keep answers under 30 seconds of speaking time. No fluff.`
+${hasExistingAnswer ? `Rewrite the above answer to be more natural and conversational.` : `Write a natural, conversational interview answer.`}`
             }
           ]
         })
@@ -593,16 +634,10 @@ Keep answers under 30 seconds of speaking time. No fluff.`
 
       const data = await response.json();
       const generated = data.choices[0].message.content;
-      
-      const answerMatch = generated.match(/\*\*What I'd Say:\*\*\s*([\s\S]*?)(?=\*\*Key Points:|$)/i);
-      const keyPointsMatch = generated.match(/\*\*Key Points:\*\*\s*([\s\S]*?)$/i);
-
-      const answer = answerMatch ? answerMatch[1].trim() : generated;
-      const tips = keyPointsMatch ? keyPointsMatch[1].split('\n').map((t: string) => t.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean) : [];
 
       setAnswerEditData({
-        answer: answer,
-        tips: tips.slice(0, 10)
+        answer: generated,
+        tips: []
       });
     } catch (err) {
       console.error('Failed to generate answer:', err);
@@ -1328,7 +1363,10 @@ Keep answers under 30 seconds of speaking time. No fluff.`
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  onClick={() => generateAnswer(q.question, q.difficulty)}
+                                  onClick={() => {
+                                    const existingAns = getQuestionCustomAnswer(selectedTopic, q.id)?.answer || q.answer || '';
+                                    generateAnswer(q.question, q.difficulty, existingAns);
+                                  }}
                                   disabled={generatingAnswer}
                                 >
                                   {generatingAnswer ? (
@@ -1354,7 +1392,7 @@ Keep answers under 30 seconds of speaking time. No fluff.`
                                 <Button 
                                   size="sm" 
                                   variant="ghost"
-                                  onClick={() => setEditingAnswer(null)}
+                                  onClick={() => { setEditingAnswer(null); setShowMarkdownPreview(false); }}
                                 >
                                   <X className="h-3 w-3" />
                                 </Button>
@@ -1362,7 +1400,12 @@ Keep answers under 30 seconds of speaking time. No fluff.`
                             ) : (
                               <>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); handleOpenEditAnswer(q, selectedTopic); setTimeout(() => generateAnswer(q.question, q.difficulty), 100); }}
+                                  onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    const existingAns = getQuestionCustomAnswer(selectedTopic, q.id)?.answer || q.answer || '';
+                                    handleOpenEditAnswer(q, selectedTopic); 
+                                    setTimeout(() => generateAnswer(q.question, q.difficulty, existingAns), 100); 
+                                  }}
                                   className="p-1 hover:bg-secondary rounded text-primary"
                                   title="Generate Answer with AI"
                                 >
@@ -1390,26 +1433,34 @@ Keep answers under 30 seconds of speaking time. No fluff.`
                         </div>
                         {editingAnswer === q.id ? (
                           <div className="space-y-2">
-                            <Textarea
-                              value={answerEditData.answer}
-                              onChange={(e) => setAnswerEditData(prev => ({ ...prev, answer: e.target.value }))}
-                              placeholder="Enter the answer..."
-                              rows={4}
-                              className="text-sm"
-                            />
-                            <div>
-                              <label className="text-xs font-medium text-muted-foreground">Key Points (one per line)</label>
-                              <Textarea
-                                value={answerEditData.tips.join('\n')}
-                                onChange={(e) => setAnswerEditData(prev => ({ 
-                                  ...prev, 
-                                  tips: e.target.value.split('\n').map(t => t.trim()).filter(Boolean)
-                                }))}
-                                placeholder="Enter key points, one per line..."
-                                rows={3}
-                                className="text-sm mt-1"
-                              />
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-medium text-muted-foreground">Answer (Markdown supported)</label>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                onClick={() => setShowMarkdownPreview(!showMarkdownPreview)}
+                                className="h-6 text-xs"
+                              >
+                                {showMarkdownPreview ? 'Edit' : 'Preview'}
+                              </Button>
                             </div>
+                            {showMarkdownPreview ? (
+                              <div className="min-h-[100px] p-3 border rounded-md bg-muted/50 text-sm prose prose-sm dark:prose-invert max-w-none">
+                                {answerEditData.answer ? (
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{answerEditData.answer}</ReactMarkdown>
+                                ) : (
+                                  <span className="text-muted-foreground italic">Nothing to preview</span>
+                                )}
+                              </div>
+                            ) : (
+                              <Textarea
+                                value={answerEditData.answer}
+                                onChange={(e) => setAnswerEditData(prev => ({ ...prev, answer: e.target.value }))}
+                                placeholder="Enter the answer (Markdown supported: **bold**, *italic*, `code`, - lists, etc.)..."
+                                rows={6}
+                                className="text-sm font-mono"
+                              />
+                            )}
                           </div>
                         ) : q.answer ? (
                           <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
@@ -1422,17 +1473,7 @@ Keep answers under 30 seconds of speaking time. No fluff.`
                         )}
                       </div>
                       
-                      {!editingAnswer && q.tips && q.tips.length > 0 && (
-                        <div className="border-t pt-3">
-                          <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
-                            <Lightbulb className="h-4 w-4 text-yellow-500" />
-                            Key Points
-                          </h4>
-                          <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{q.tips.map((tip: string) => `- ${tip}`).join('\n')}</ReactMarkdown>
-                          </div>
-                        </div>
-                      )}
+
                     </div>
                   )}
                 </div>

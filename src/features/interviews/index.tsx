@@ -97,6 +97,11 @@ export function Interviews() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.companyId || formData.companyId <= 0) {
+      alert('Please select a valid company');
+      return;
+    }
+    
     const [hours, minutes] = formData.time.split(':').map(Number);
     const interviewDate = new Date(formData.date);
     interviewDate.setHours(hours, minutes, 0, 0);
@@ -127,8 +132,9 @@ export function Interviews() {
   };
 
   const resetFormData = () => {
+    const firstCompanyId = companies.length > 0 ? (companies[0]?.id ?? 1) : 0;
     setFormData({
-      companyId: companies[0]?.id || 0,
+      companyId: firstCompanyId,
       date: new Date().toISOString().split('T')[0],
       time: '10:00',
       type: 'phone',
@@ -171,7 +177,9 @@ export function Interviews() {
   };
 
   const getCompanyName = (companyId: number) => {
-    return companies.find(c => c.id === companyId)?.name || 'Unknown';
+    if (!companyId || companyId <= 0) return 'No Company';
+    const company = companies.find(c => c.id === companyId);
+    return company?.name || 'Unknown';
   };
 
   const getRandomThankYouMessage = useMemo(() => {
@@ -376,12 +384,22 @@ export function Interviews() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="company">Company</Label>
-                <Select
-                  options={companies.map(c => ({ label: c.name, value: String(c.id) }))}
-                  value={String(formData.companyId)}
-                  onChange={(e) => setFormData({ ...formData, companyId: parseInt(e.target.value) })}
+                <select
+                  value={formData.companyId}
+                  onChange={(e) => setFormData({ ...formData, companyId: Number(e.target.value) })}
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
-                />
+                >
+                  {companies.length === 0 ? (
+                    <option value="">No companies available</option>
+                  ) : (
+                    companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))
+                  )}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
