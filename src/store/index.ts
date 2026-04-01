@@ -284,49 +284,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   sync: async () => {
-    const { companies, questions, answers, interviews, githubPassword } = get();
+    const { companies, questions, answers, interviews, checklist, flashcards, streak, githubPassword, githubConfig } = get();
     
-    if (!githubPassword) return;
-
-    set(state => ({
-      syncState: { ...state.syncState, isSyncing: true, syncError: undefined }
-    }));
-
-    try {
-      const syncData = {
-        version: 1,
-        companies,
-        questions,
-        answers,
-        interviews,
-        lastUpdated: new Date().toISOString()
-      };
-
-      await githubSync.fullSync(syncData);
-
-      set({
-        syncState: {
-          isSyncing: false,
-          lastSyncAt: new Date(),
-          syncError: undefined,
-          pendingChanges: 0
-        }
-      });
-    } catch (error) {
-      set(state => ({
-        syncState: {
-          ...state.syncState,
-          isSyncing: false,
-          syncError: (error as Error).message
-        }
-      }));
-    }
-  },
-
-  syncAllData: async () => {
-    const { companies, questions, answers, interviews, checklist, flashcards, streak, githubPassword } = get();
-    
-    if (!githubPassword) return;
+    if (!githubPassword || !githubConfig) return;
 
     set(state => ({
       syncState: { ...state.syncState, isSyncing: true, syncError: undefined }
@@ -345,9 +305,16 @@ export const useAppStore = create<AppState>((set, get) => ({
         lastUpdated: new Date().toISOString()
       };
 
-      await githubSync.fullSync(syncData);
+      const mergedData = await githubSync.fullSync(syncData);
 
       set({
+        companies: mergedData.companies || [],
+        questions: mergedData.questions || [],
+        answers: mergedData.answers || [],
+        interviews: mergedData.interviews || [],
+        checklist: mergedData.checklist || [],
+        flashcards: mergedData.flashcards || [],
+        streak: mergedData.streak || { streak: 0, last: '' },
         syncState: {
           isSyncing: false,
           lastSyncAt: new Date(),
@@ -355,6 +322,68 @@ export const useAppStore = create<AppState>((set, get) => ({
           pendingChanges: 0
         }
       });
+
+      saveToStorage('interviewiq_checklist', mergedData.checklist || []);
+      saveToStorage('interviewiq_flashcards', mergedData.flashcards || []);
+      saveToStorage('interviewiq_streak', mergedData.streak || { streak: 0, last: '' });
+
+    } catch (error) {
+      set(state => ({
+        syncState: {
+          ...state.syncState,
+          isSyncing: false,
+          syncError: (error as Error).message
+        }
+      }));
+    }
+  },
+
+  syncAllData: async () => {
+    const { companies, questions, answers, interviews, checklist, flashcards, streak, githubPassword, githubConfig } = get();
+    
+    if (!githubPassword || !githubConfig) return;
+
+    set(state => ({
+      syncState: { ...state.syncState, isSyncing: true, syncError: undefined }
+    }));
+
+    try {
+      const syncData = {
+        version: 1,
+        companies,
+        questions,
+        answers,
+        interviews,
+        checklist,
+        flashcards,
+        streak,
+        lastUpdated: new Date().toISOString()
+      };
+
+      const mergedData = await githubSync.fullSync(syncData);
+
+      // Update local state with merged data from GitHub
+      set({
+        companies: mergedData.companies || [],
+        questions: mergedData.questions || [],
+        answers: mergedData.answers || [],
+        interviews: mergedData.interviews || [],
+        checklist: mergedData.checklist || [],
+        flashcards: mergedData.flashcards || [],
+        streak: mergedData.streak || { streak: 0, last: '' },
+        syncState: {
+          isSyncing: false,
+          lastSyncAt: new Date(),
+          syncError: undefined,
+          pendingChanges: 0
+        }
+      });
+
+      // Save merged data to local storage
+      saveToStorage('interviewiq_checklist', mergedData.checklist || []);
+      saveToStorage('interviewiq_flashcards', mergedData.flashcards || []);
+      saveToStorage('interviewiq_streak', mergedData.streak || { streak: 0, last: '' });
+
     } catch (error) {
       set(state => ({
         syncState: {

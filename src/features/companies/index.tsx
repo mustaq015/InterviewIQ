@@ -210,103 +210,114 @@ export function Companies() {
   return (
     <div className="h-full flex flex-col">
       {!selectedCompany ? (
-        <div className="space-y-8">
+        <div className="p-6 lg:p-8 space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-serif font-bold tracking-tight">Companies</h1>
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Companies</h1>
+              <p className="text-sm text-muted-foreground mt-1">Manage your target companies</p>
+            </div>
             <Button onClick={() => {
               setEditingCompany(null);
               setFormData(resetFormData());
               setIsDialogOpen(true);
-            }} className="rounded-full px-6">
+            }}>
               <Plus className="h-4 w-4 mr-2" />
               Add Company
             </Button>
           </div>
 
           {companies.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Building2 className="h-16 w-16 text-gray-300 mb-4" />
-              <p className="text-xl text-gray-500">No companies yet</p>
-              <p className="text-gray-400 mt-1">Start by adding your first company</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Building2 className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium text-foreground mb-1">No companies yet</h3>
+              <p className="text-sm text-muted-foreground mb-4">Start by adding your first company</p>
+              <Button onClick={() => {
+                setEditingCompany(null);
+                setFormData(resetFormData());
+                setIsDialogOpen(true);
+              }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Company
+              </Button>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {companies.map((company, idx) => {
                 const colors = [
-                  'from-pink-500 to-rose-500',
-                  'from-violet-500 to-purple-500',
-                  'from-blue-500 to-cyan-500',
-                  'from-emerald-500 to-teal-500',
-                  'from-amber-500 to-orange-500',
-                  'from-fuchsia-500 to-pink-500',
+                  'from-blue-500 to-blue-600',
+                  'from-green-500 to-green-600',
+                  'from-purple-500 to-purple-600',
+                  'from-orange-500 to-orange-600',
+                  'from-pink-500 to-pink-600',
+                  'from-indigo-500 to-indigo-600',
                 ];
                 const colorClass = colors[idx % colors.length];
                 return (
-                <div 
-                  key={company.id} 
-                  className="group relative border-b border-gray-100 dark:border-gray-800 pb-3 hover:scale-[1.02] transition-all"
-                >
                   <div 
-                    className="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-lg p-3 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    key={company.id} 
+                    className="group relative bg-card border border-border rounded-lg p-4 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer"
                     onClick={() => handleSelectCompany(company)}
                   >
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center shadow-md`}>
-                      <Building2 className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">{company.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className={`${getPipelineColor(company.pipeline)} text-white text-[10px] px-2 py-0.5`}>
-                          {pipelineStages.find(s => s.value === company.pipeline)?.label}
-                        </Badge>
-                        {company.rating && (
-                          <div className="flex items-center gap-0.5">
-                            <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-                            <span className="text-[10px] text-gray-500">{company.rating}</span>
-                          </div>
-                        )}
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center shrink-0`}>
+                        <Building2 className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-foreground truncate">{company.name}</h3>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <Badge className={`${getPipelineColor(company.pipeline)} text-white text-[10px] px-2 py-0.5`}>
+                            {pipelineStages.find(s => s.value === company.pipeline)?.label}
+                          </Badge>
+                          {company.rating && (
+                            <div className="flex items-center gap-0.5">
+                              <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                              <span className="text-[10px] text-muted-foreground">{company.rating}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEdit(company); }}
+                        className="p-1.5 rounded-md bg-background border border-border shadow-sm hover:bg-accent transition-colors"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(company.id!); }}
+                        className="p-1.5 rounded-md bg-background border border-border shadow-sm hover:bg-destructive/10 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleEdit(company); }}
-                      className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-md hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors"
-                    >
-                      <Pencil className="h-3.5 w-3.5 text-blue-500" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(company.id!); }}
-                      className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-md hover:bg-red-50 dark:hover:bg-red-900 transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                    </button>
-                  </div>
-                </div>
                 );
               })}
             </div>
           )}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="p-6 lg:p-8 space-y-6">
           <button 
             onClick={() => setSelectedCompany(null)} 
-            className="text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1 text-sm font-medium"
+            className="text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1 text-sm font-medium transition-colors"
           >
             <X className="h-4 w-4" />
             Back
           </button>
           
-          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/50 dark:via-indigo-950/50 dark:to-purple-950/50 rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                <Building2 className="h-6 w-6 text-white" />
+          <div className="bg-card border border-border rounded-xl p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shrink-0">
+                <Building2 className="h-7 w-7 text-white" />
               </div>
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{selectedCompany.name}</h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge className={`${getPipelineColor(selectedCompany.pipeline)} text-white text-xs px-2 py-0.5`}>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-semibold text-foreground">{selectedCompany.name}</h1>
+                <div className="flex items-center gap-3 mt-2">
+                  <Badge className={`${getPipelineColor(selectedCompany.pipeline)} text-white text-xs`}>
                     {pipelineStages.find(s => s.value === selectedCompany.pipeline)?.label}
                   </Badge>
                   {selectedCompany.rating && (
@@ -314,13 +325,13 @@ export function Companies() {
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className={`h-3 w-3 ${i < selectedCompany.rating! ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                          className={`h-3 w-3 ${i < selectedCompany.rating! ? 'fill-yellow-400 text-yellow-400' : 'text-muted'}`}
                         />
                       ))}
                     </div>
                   )}
                   {selectedCompany.interviewDate && (
-                    <span className="text-xs text-gray-500">{new Date(selectedCompany.interviewDate).toLocaleDateString()}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(selectedCompany.interviewDate).toLocaleDateString()}</span>
                   )}
                 </div>
               </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui';
-import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Github, Key, Database, LogOut, Link } from 'lucide-react';
+import { RefreshCw, XCircle, AlertTriangle, Github, Key, Database, LogOut, Link } from 'lucide-react';
 import { githubSync } from '../../services';
 import { format } from 'date-fns';
 

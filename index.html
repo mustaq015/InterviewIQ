@@ -7,12 +7,41 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#020817" />
-    <title>InterviewIQ - Interview Preparation Platform</title>
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="description" content="InterviewIQ - Your all-in-one interview preparation platform. Practice coding problems, review questions, track progress, and ace your next interview." />
+    <meta name="keywords" content="interview preparation, coding practice, interview questions, data engineering, software engineering" />
+    <meta property="og:title" content="InterviewIQ - Interview Preparation Platform" />
+    <meta property="og:description" content="Master your next interview with practice problems, AI-powered reviews, and comprehensive study materials." />
+    <meta property="og:type" content="website" />
+    <title>InterviewIQ - Ace Your Next Interview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+      html {
+        scroll-behavior: smooth;
+      }
       html, body {
         overscroll-behavior: none;
         -webkit-overflow-scrolling: touch;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #666;
+      }
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #888 transparent;
       }
       @media (max-width: 1024px) {
         html {
@@ -28,6 +57,14 @@
         .rotate-device-notice {
           display: flex !important;
         }
+      }
+      ::selection {
+        background: #6366f1;
+        color: white;
+      }
+      :focus-visible {
+        outline: 2px solid #6366f1;
+        outline-offset: 2px;
       }
     </style>
   </head>

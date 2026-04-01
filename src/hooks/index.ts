@@ -1,32 +1,40 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+
+function getStoredValue<T>(key: string, initialValue: T): T {
+  if (typeof window === 'undefined') return initialValue;
+  try {
+    const item = window.localStorage.getItem(key);
+    return item ? JSON.parse(item) : initialValue;
+  } catch {
+    return initialValue;
+  }
+}
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] {
-  const [storedValue, setStoredValue] = useState<T>(initialValue);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [storedValue, setStoredValue] = useState<T>(() => getStoredValue(key, initialValue));
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      if (item) {
-        setStoredValue(JSON.parse(item));
-      }
-    } catch {
-      console.error('Error reading from localStorage');
+    if (!isInitialized.current) {
+      isInitialized.current = true;
+      const value = getStoredValue(key, initialValue);
+      setStoredValue(value);
     }
-    setIsHydrated(true);
+  }, [key, initialValue]);
+
+  const setValue = useCallback((value: T | ((prev: T) => T)) => {
+    setStoredValue(prev => {
+      const valueToStore = value instanceof Function ? value(prev) : value;
+      try {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+      return valueToStore;
+    });
   }, [key]);
 
-  const setValue = (value: T | ((prev: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
-  };
-
-  return [isHydrated ? storedValue : initialValue, setValue];
+  return [storedValue, setValue];
 }
 
 export function useDebounce<T>(value: T, delay: number): T {

@@ -21,7 +21,7 @@ import { GripVertical } from 'lucide-react';
 
 export interface DraggableItem {
   id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface DraggableCardProps {
@@ -173,7 +173,6 @@ export function SortableItem({
     setNodeRef,
     transform,
     transition,
-    isDragging,
   } = useSortable({ id });
 
   const style = {

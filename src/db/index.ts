@@ -24,6 +24,8 @@ export class InterviewIQDB extends Dexie {
       answers: '++id, questionId, version, isBest, createdAt, updatedAt, deleted, syncedToGitHub',
       interviews: '++id, companyId, date, type, status, createdAt, updatedAt, deleted, syncedToGitHub',
       uploadedFiles: '++id, name, originalName, type, topic, createdAt, updatedAt'
+    }).upgrade(tx => {
+      return tx.table('uploadedFiles').clear();
     });
   }
 }
@@ -31,7 +33,7 @@ export class InterviewIQDB extends Dexie {
 export const db = new InterviewIQDB();
 
 export async function getAllCompanies(): Promise<Company[]> {
-  return db.companies.filter(c => !c.deleted).toArray();
+  return db.companies.where('deleted').equals(0).toArray();
 }
 
 export async function getCompanyById(id: number): Promise<Company | undefined> {
@@ -71,7 +73,7 @@ export async function deleteCompany(id: number): Promise<void> {
 }
 
 export async function getAllQuestions(): Promise<Question[]> {
-  return db.questions.filter(q => !q.deleted).toArray();
+  return db.questions.where('deleted').equals(0).toArray();
 }
 
 export async function getQuestionsByCompany(companyId: number): Promise<Question[]> {
@@ -115,7 +117,7 @@ export async function deleteQuestion(id: number): Promise<void> {
 }
 
 export async function getAllAnswers(): Promise<Answer[]> {
-  return db.answers.filter(a => !a.deleted).toArray();
+  return db.answers.where('deleted').equals(0).toArray();
 }
 
 export async function getAnswersByQuestion(questionId: number): Promise<Answer[]> {
@@ -159,7 +161,7 @@ export async function deleteAnswer(id: number): Promise<void> {
 }
 
 export async function getAllInterviews(): Promise<Interview[]> {
-  return db.interviews.filter(i => !i.deleted).toArray();
+  return db.interviews.where('deleted').equals(0).toArray();
 }
 
 export async function getInterviewsByCompany(companyId: number): Promise<Interview[]> {

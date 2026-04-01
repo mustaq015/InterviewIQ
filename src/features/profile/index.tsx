@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Input, Textarea, Dial
 import { 
   Plus, Pencil, Trash2, X, Copy, Check, Code, FileCode, Sun, Moon,
   Download, Printer, Braces, Sparkles, ChevronDown, Briefcase, GraduationCap,
-  Wrench, FileText as FileTextIcon, GripVertical, User, Save, MessageSquare,
-  Maximize2, Minimize2, Lightbulb, ArrowUpDown, ChevronRight
+  Wrench, FileText as FileTextIcon, GripVertical, Save, MessageSquare,
+  Lightbulb, ArrowUpDown, ChevronRight
 } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
 import type { Profile, Experience, Education } from '../../types';
@@ -195,12 +195,12 @@ export function Profile() {
   const [isIntroDialogOpen, setIsIntroDialogOpen] = useState(false);
   const [editingIntro, setEditingIntro] = useState<SelfIntro | null>(null);
   const [introForm, setIntroForm] = useState({ title: '', content: '', tips: '' });
-  const [viewingIntro, setViewingIntro] = useState<SelfIntro | null>(null);
   const [fullscreenIntro, setFullscreenIntro] = useState<SelfIntro | null>(null);
   const [copiedIntro, setCopiedIntro] = useState(false);
 
   useEffect(() => {
     setResumeCode(getDefaultResumeCode(profile));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.experience, profile.education, profile.skills, profile.projects, profile.name, profile.email, profile.phone, profile.currentLocation, profile.linkedin, profile.objective, profile.languages, profile.summary]);
 
   const handleSaveIntro = () => {

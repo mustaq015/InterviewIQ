@@ -368,28 +368,26 @@ export function QAView() {
   const hasApiKey = aiConfig.apiKey.length > 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 flex items-center justify-center shadow-lg">
-            <MessageCircleQuestion className="h-5 w-5 text-white" />
-          </div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Q&A</h2>
+    <div className="p-6 lg:p-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Q&A</h1>
+          <p className="text-sm text-muted-foreground mt-1">Interview questions and answers</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" size="sm" onClick={() => setIsSettingsOpen(true)} className="border-purple-300 dark:border-purple-700 px-4">
-            <Bot className="h-4 w-4 mr-2 text-purple-500" />
-            <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent font-medium">{hasApiKey ? 'AI On' : 'AI Setup'}</span>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsSettingsOpen(true)}>
+            <Bot className="h-4 w-4 mr-2" />
+            {hasApiKey ? 'AI On' : 'AI Setup'}
           </Button>
-          <Button onClick={() => handleOpenDialog()} size="sm" className="bg-gradient-to-r from-pink-500 to-purple-500 border-0 text-white shadow-lg px-4 font-medium">
+          <Button onClick={() => handleOpenDialog()}>
             <Plus className="h-4 w-4 mr-2" />
             Add Q&A
           </Button>
         </div>
       </div>
 
-      <Card className="border-purple-200 dark:border-purple-800 overflow-hidden">
-        <CardContent className="flex flex-wrap gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
+      <Card className="overflow-hidden">
+        <CardContent className="flex flex-wrap gap-3 p-4">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -415,13 +413,17 @@ export function QAView() {
       </Card>
 
       {filteredItems.length === 0 ? (
-        <Card className="border-dashed border-2 border-purple-200 dark:border-purple-800">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center mb-6 shadow-xl">
-              <MessageCircleQuestion className="h-10 w-10 text-white" />
+        <Card className="border-dashed border-2">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <MessageCircleQuestion className="h-8 w-8 text-muted-foreground" />
             </div>
-            <p className="text-xl font-medium bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">No Q&A found</p>
-            <p className="text-sm text-muted-foreground mt-2">Start by adding your first question</p>
+            <h3 className="text-lg font-medium text-foreground mb-1">No Q&A found</h3>
+            <p className="text-sm text-muted-foreground mb-4">Start by adding your first question</p>
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Q&A
+            </Button>
           </CardContent>
         </Card>
       ) : (

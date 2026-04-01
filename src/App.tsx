@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Dashboard, Companies, QAView, Practice, InterviewHub, Materials, Interviews, Sync, Profile } from './features';
 import { CompanyDetail } from './features/companies/CompanyDetail';
 import { RotateCcw } from 'lucide-react';
@@ -71,7 +72,9 @@ function App() {
         </div>
       )}
       <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-        {renderContent()}
+        <ErrorBoundary>
+          {renderContent()}
+        </ErrorBoundary>
       </Layout>
     </>
   );

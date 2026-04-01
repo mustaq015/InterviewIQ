@@ -332,7 +332,7 @@ export function InterviewHub() {
     return progress[questionId] === true;
   };
 
-  const getAllQuestionsForTopic = (topicId: string): (InterviewQuestion & { isCustom?: boolean })[] => {
+  const getAllQuestionsForTopic = useCallback((topicId: string): (InterviewQuestion & { isCustom?: boolean })[] => {
     const predefinedTopic = dataEngineeringTopics[topicId as DataEngineeringTopic];
     const predefined = predefinedTopic?.questions || [];
     const custom = customQuestions[topicId] || [];
@@ -360,7 +360,7 @@ export function InterviewHub() {
       });
     
     return [...mergedQuestions, ...newCustomQuestions];
-  };
+  }, [customQuestions, customAnswers, hiddenQuestions]);
 
   const getQuestionCustomAnswer = (topicId: string, questionId: string) => {
     return customAnswers[`${topicId}:${questionId}`];
@@ -789,7 +789,7 @@ ${hasExistingAnswer ? `Rewrite the above answer to be more natural and conversat
       isCustom: true
     }));
     return [...predefined, ...custom] as ExtendedTopic[];
-  }, [allTopics, hiddenTopics, customTopics, customQuestions]);
+  }, [hiddenTopics, customTopics, customQuestions]);
 
   const filteredQuestions = useMemo(() => {
     if (!selectedTopic) return [];
@@ -814,6 +814,7 @@ ${hasExistingAnswer ? `Rewrite the above answer to be more natural and conversat
     }
     
     return questions;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTopic, filterDifficulty, searchTerm, showBookmarkedOnly, savedQuestions, progress, customQuestions, hiddenTopics, getAllQuestionsForTopic, isBookmarked]);
 
   const overallProgress = useMemo(() => {
@@ -826,6 +827,7 @@ ${hasExistingAnswer ? `Rewrite the above answer to be more natural and conversat
       reviewed += reviewedCount;
     });
     return { reviewed, total };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress, customQuestions, customTopics, hiddenTopics, getAllQuestionsForTopic, getAllTopics, isReviewed]);
 
   const difficultyColors = {

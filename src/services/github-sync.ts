@@ -260,13 +260,13 @@ export class GitHubSyncService {
   }
 
   private mergeData(local: SyncData, remote: SyncData): SyncData {
-    const mergedCompanies = this.mergeEntities(local.companies, remote.companies);
-    const mergedQuestions = this.mergeEntities(local.questions, remote.questions);
-    const mergedAnswers = this.mergeEntities(local.answers, remote.answers);
-    const mergedInterviews = this.mergeEntities(local.interviews, remote.interviews);
-    const mergedChecklist = this.mergeChecklist(local.checklist, remote.checklist);
-    const mergedFlashcards = this.mergeFlashcards(local.flashcards, remote.flashcards);
-    const mergedStreak = local.streak.streak >= remote.streak.streak ? local.streak : remote.streak;
+    const mergedCompanies = this.mergeEntities(local.companies || [], remote.companies || []);
+    const mergedQuestions = this.mergeEntities(local.questions || [], remote.questions || []);
+    const mergedAnswers = this.mergeEntities(local.answers || [], remote.answers || []);
+    const mergedInterviews = this.mergeEntities(local.interviews || [], remote.interviews || []);
+    const mergedChecklist = this.mergeChecklist(local.checklist || [], remote.checklist || []);
+    const mergedFlashcards = this.mergeFlashcards(local.flashcards || [], remote.flashcards || []);
+    const mergedStreak = (local.streak?.streak || 0) >= (remote.streak?.streak || 0) ? local.streak : remote.streak;
 
     return {
       version: Math.max(local.version, remote.version) + 1,
@@ -276,16 +276,20 @@ export class GitHubSyncService {
       interviews: mergedInterviews,
       checklist: mergedChecklist,
       flashcards: mergedFlashcards,
-      streak: mergedStreak,
+      streak: mergedStreak || { streak: 0, last: '' },
       lastUpdated: new Date().toISOString()
     };
   }
 
   private mergeChecklist(local: SyncData['checklist'], remote: SyncData['checklist']): SyncData['checklist'] {
+    if (!Array.isArray(local) || !Array.isArray(remote)) {
+      return local || remote || [];
+    }
     const merged = new Map<number, SyncData['checklist'][0]>();
     const all = [...local, ...remote];
 
     for (const item of all) {
+      if (!item || typeof item.id !== 'number') continue;
       const existing = merged.get(item.id);
       if (!existing) {
         merged.set(item.id, item);
@@ -298,10 +302,14 @@ export class GitHubSyncService {
   }
 
   private mergeFlashcards(local: SyncData['flashcards'], remote: SyncData['flashcards']): SyncData['flashcards'] {
+    if (!Array.isArray(local) || !Array.isArray(remote)) {
+      return local || remote || [];
+    }
     const merged = new Map<number, SyncData['flashcards'][0]>();
     const all = [...local, ...remote];
 
     for (const card of all) {
+      if (!card || typeof card.id !== 'number') continue;
       const existing = merged.get(card.id);
       if (!existing) {
         merged.set(card.id, card);
@@ -317,10 +325,14 @@ export class GitHubSyncService {
     local: T[],
     remote: T[]
   ): T[] {
+    if (!Array.isArray(local) || !Array.isArray(remote)) {
+      return local || remote || [];
+    }
     const merged = new Map<number, T>();
     const all = [...local, ...remote];
 
     for (const entity of all) {
+      if (!entity || typeof entity.id !== 'number') continue;
       const id = entity.id!;
       const existing = merged.get(id);
 

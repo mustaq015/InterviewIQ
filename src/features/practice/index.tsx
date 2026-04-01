@@ -1,11 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui';
 import { Button, Input } from '../../components/ui';
-import { CheckCircle, Circle, Search, BarChart, Plus, Edit2, Trash2, Save, Code, Copy, Check, X, ChevronLeft, Star, Bot, Sparkles } from 'lucide-react';
+import { CheckCircle, Circle, Search, BarChart, Plus, Edit2, Trash2, Save, Code, Copy, Check, X, ChevronLeft, Star, Bot, Sparkles, Loader2, Lightbulb } from 'lucide-react';
 import { useLocalStorage } from '../../hooks';
-import Editor from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+const Editor = lazy(() => import('@monaco-editor/react').then(m => ({ default: m.default })));
+
+const EditorSkeleton = () => (
+  <div className="h-[350px] rounded-xl border flex items-center justify-center bg-muted/20">
+    <div className="flex items-center gap-2 text-muted-foreground">
+      <Loader2 className="h-5 w-5 animate-spin" />
+      <span className="text-sm">Loading editor...</span>
+    </div>
+  </div>
+);
 
 interface Problem {
   id: string;
@@ -90,6 +100,13 @@ export function Practice() {
   const [aiExplaining, setAiExplaining] = useState(false);
   const [queryExplanation, setQueryExplanation] = useState<string | null>(null);
   const [queryExplanationError, setQueryExplanationError] = useState<string | null>(null);
+  const [optimizedCode, setOptimizedCode] = useState<string | null>(null);
+  const [lineAnnotations, setLineAnnotations] = useState<Array<{
+    line: number;
+    type: 'correct' | 'incorrect' | 'suggestion';
+    message: string;
+  }>>([]);
+  const editorRef = useRef<import('monaco-editor').editor.IStandaloneCodeEditor | null>(null);
 
   const getCodeKey = (topicId: string, problemId: string) => `${topicId}:${problemId}`;
 
@@ -239,14 +256,7 @@ export function Practice() {
     }));
   };
 
-  const closeCodeEditor = () => {
-    saveCode();
-    setExpandedProblemId(null);
-    setAiReview(null);
-    setAiReviewError(null);
-    setQueryExplanation(null);
-    setQueryExplanationError(null);
-  };
+
 
   const getAiReview = async () => {
     if (!currentCode.trim()) {
@@ -257,6 +267,8 @@ export function Practice() {
     setAiReviewLoading(true);
     setAiReviewError(null);
     setAiReview(null);
+    setOptimizedCode(null);
+    setLineAnnotations([]);
 
     try {
       const problem = problems[selectedTopicId!]?.find(p => p.id === expandedProblemId);
@@ -267,11 +279,26 @@ export function Practice() {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert code reviewer. Review the code and provide constructive feedback.'
+              content: `You are an expert code reviewer. Analyze the code and provide structured feedback. 
+
+IMPORTANT: For your response, you MUST use this exact format:
+<ANNOTATIONS>
+[LINE_NUMBER]|correct|Correct description here
+[LINE_NUMBER]|incorrect|Why it's incorrect|Suggestion for fix
+[LINE_NUMBER]|suggestion|General improvement suggestion
+</ANNOTATIONS>
+<OPTIMIZED_CODE>
+\`\`\`${currentLang}
+[Your optimized/rewritten code here]
+\`\`\`
+</OPTIMIZED_CODE>
+<REVIEW>
+[Your detailed markdown review here - bugs, improvements, complexity analysis]
+</REVIEW>`
             },
             {
               role: 'user',
-              content: `Problem: ${problem?.name || 'Unknown'}\n\nLanguage: ${currentLang}\n\nCode:\n\`\`\`${currentLang}\n${currentCode}\n\`\`\`\n\nPlease review this code and provide:\n1. Code quality feedback\n2. Potential bugs or issues\n3. Suggestions for improvement\n4. Time complexity analysis if applicable`
+              content: `Problem: ${problem?.name || 'Unknown'}\nDescription: ${problem?.description || 'N/A'}\n\nLanguage: ${currentLang}\n\nCode:\n\`\`\`${currentLang}\n${currentCode}\n\`\`\`\n\nAnalyze each line of code and provide:\n1. Line-by-line annotations marking correct (green), incorrect (red), or suggestions (yellow)\n2. An optimized version of the code\n3. A detailed review with feedback`
             }
           ]
         })
@@ -283,13 +310,105 @@ export function Practice() {
       }
 
       const data = await response.json();
-      setAiReview(data.choices[0].message.content);
+      const content = data.choices[0].message.content;
+      
+      const annotationsMatch = content.match(/<ANNOTATIONS>([\s\S]*?)<\/ANNOTATIONS>/);
+      const optimizedMatch = content.match(/<OPTIMIZED_CODE>[\s\S]*?```[\w]*\n?([\s\S]*?)```[\s]*<\/OPTIMIZED_CODE>/);
+      const reviewMatch = content.match(/<REVIEW>([\s\S]*?)<\/REVIEW>/);
+      
+      if (annotationsMatch) {
+        const annotations: Array<{line: number; type: 'correct' | 'incorrect' | 'suggestion'; message: string}> = [];
+        const lines = annotationsMatch[1].trim().split('\n');
+        lines.forEach(line => {
+          const parts = line.split('|');
+          if (parts.length >= 2) {
+            const lineNum = parseInt(parts[0].trim());
+            if (!isNaN(lineNum)) {
+              annotations.push({
+                line: lineNum,
+                type: parts[1].trim() as 'correct' | 'incorrect' | 'suggestion',
+                message: parts.slice(2).join(' | ').trim()
+              });
+            }
+          }
+        });
+        setLineAnnotations(annotations);
+      }
+      
+      if (optimizedMatch) {
+        setOptimizedCode(optimizedMatch[1].trim());
+      }
+      
+      if (reviewMatch) {
+        setAiReview(reviewMatch[1].trim());
+      } else {
+        setAiReview(content);
+      }
+      
+      applyDecorations();
     } catch (err) {
       setAiReviewError((err as Error).message);
     } finally {
       setAiReviewLoading(false);
     }
   };
+
+  const parseInt = (str: string) => {
+    const num = parseFloat(str);
+    return isNaN(num) ? null : num;
+  };
+
+  const applyDecorations = useCallback(() => {
+    if (!editorRef.current || lineAnnotations.length === 0) return;
+    
+    const editor = editorRef.current;
+    const model = editor.getModel();
+    if (!model) return;
+
+    const decorations = lineAnnotations.map(ann => {
+      const lineNumber = ann.line;
+      const lineContent = model.getLineContent(lineNumber);
+      const startColumn = 1;
+      const endColumn = lineContent.length + 1;
+      
+      const isDark = isDarkMode;
+      let className = '';
+      let glyphClassName = '';
+      
+      if (ann.type === 'correct') {
+        className = isDark ? 'correct-line-dark' : 'correct-line-light';
+        glyphClassName = isDark ? 'correct-glyph-dark' : 'correct-glyph-light';
+      } else if (ann.type === 'incorrect') {
+        className = isDark ? 'incorrect-line-dark' : 'incorrect-line-light';
+        glyphClassName = isDark ? 'incorrect-glyph-dark' : 'incorrect-glyph-light';
+      } else {
+        className = isDark ? 'suggestion-line-dark' : 'suggestion-line-light';
+        glyphClassName = isDark ? 'suggestion-glyph-dark' : 'suggestion-glyph-light';
+      }
+      
+      return {
+        range: {
+          startLineNumber: lineNumber,
+          startColumn,
+          endLineNumber: lineNumber,
+          endColumn
+        },
+        options: {
+          isWholeLine: true,
+          className: className,
+          glyphMarginClassName: glyphClassName,
+          glyphMarginHoverMessage: { value: `**${ann.type.toUpperCase()}**: ${ann.message}` },
+          hoverMessage: { value: `**${ann.type.toUpperCase()}**: ${ann.message}` },
+          overviewRuler: {
+            color: ann.type === 'correct' ? '#22c55e' : ann.type === 'incorrect' ? '#ef4444' : '#f59e0b',
+            position: 2
+          }
+        }
+      };
+    });
+
+    editor.deltaDecorations([], decorations);
+  }, [lineAnnotations, isDarkMode]);
 
   const generateCode = async () => {
     const problem = problems[selectedTopicId!]?.find(p => p.id === expandedProblemId);
@@ -409,10 +528,10 @@ Please explain this query in a clear, structured way covering:
   }, [selectedTopicId, problems, searchTerm, filterDifficulty, showSolved, progress]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 lg:p-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Coding Practice</h2>
+          <h1 className="text-2xl font-semibold text-foreground">Coding Practice</h1>
           <p className="text-sm text-muted-foreground mt-1">{stats.solved} of {stats.total} solved</p>
         </div>
         {!selectedTopicId && (
@@ -834,6 +953,7 @@ Please explain this query in a clear, structured way covering:
                             </div>
                           </div>
                           <div className={`rounded-xl border overflow-hidden ${isDarkMode ? 'border-zinc-700' : 'border-border'}`}>
+                            <Suspense fallback={<EditorSkeleton />}>
                             <Editor
                               height="350px"
                               language={currentLang}
@@ -849,7 +969,7 @@ Please explain this query in a clear, structured way covering:
                                 padding: { top: 16, bottom: 16 },
                                 links: false,
                                 folding: true,
-                                glyphMargin: false,
+                                glyphMargin: true,
                                 lineDecorationsWidth: 8,
                                 lineNumbersMinChars: 3,
                                 renderLineHighlight: 'all',
@@ -870,20 +990,73 @@ Please explain this query in a clear, structured way covering:
                               onMount={(editor) => {
                                 editor.updateOptions({
                                   links: false,
+                                  glyphMargin: true,
                                 });
+                                editorRef.current = editor;
                                 try {
                                   editor.getAction('editor.action.openLink')?.disable();
-                                } catch (e) {}
+                                } catch {
+  // Disable link action
+}
                               }}
                             />
+                            </Suspense>
                           </div>
+                          
+                          {lineAnnotations.length > 0 && (
+                            <div className="mt-4 p-4 rounded-xl border bg-card">
+                              <div className="flex items-center gap-2 mb-3">
+                                <Lightbulb className="h-4 w-4 text-yellow-500" />
+                                <span className="font-semibold text-sm text-foreground">Inline Review</span>
+                                <span className="text-xs text-muted-foreground ml-auto">
+                                  Hover over highlighted lines for details
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-3 text-xs">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-3 h-3 rounded bg-green-500/30 border border-green-500"></div>
+                                  <span className="text-muted-foreground">Correct</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-3 h-3 rounded bg-red-500/30 border border-red-500"></div>
+                                  <span className="text-muted-foreground">Needs Improvement</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-3 h-3 rounded bg-yellow-500/30 border border-yellow-500"></div>
+                                  <span className="text-muted-foreground">Suggestion</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {optimizedCode && (
+                            <div className="mt-4 p-4 rounded-xl border border-green-500/30 bg-green-500/5">
+                              <div className="flex items-center gap-2 mb-3">
+                                <Sparkles className="h-4 w-4 text-green-500" />
+                                <span className="font-semibold text-sm text-foreground">Optimized Code</span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="ml-auto gap-1.5 text-xs"
+                                  onClick={() => setCurrentCode(optimizedCode)}
+                                >
+                                  <Code className="h-3 w-3" />
+                                  Use This Code
+                                </Button>
+                              </div>
+                              <pre className="text-xs bg-muted/50 rounded-lg p-3 overflow-x-auto max-h-64">
+                                <code>{optimizedCode}</code>
+                              </pre>
+                            </div>
+                          )}
+                          
                           {(aiReview || aiReviewError) && (
                             <div className="mt-4 border-t pt-4">
                               <div className="flex items-center gap-2 mb-3">
                                 <div className="p-1.5 rounded-full bg-primary/10">
                                   <Bot className="h-4 w-4 text-primary" />
                                 </div>
-                                <span className="font-semibold text-sm text-foreground">AI Code Review</span>
+                                <span className="font-semibold text-sm text-foreground">Detailed Review</span>
                               </div>
                               {aiReviewError && (
                                 <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
