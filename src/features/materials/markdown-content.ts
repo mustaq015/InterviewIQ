@@ -70,61 +70,61 @@ export const markdownDocuments: MarkdownDocument[] = [
 
   // === NEW: SQL Study Notes ===
   {
-    "id": "sql-01-basics",
+    "id": "SQL_01_SQL_vs_NoSQL",
     "title": "SQL - SQL vs NoSQL, Constraints",
     "topic": "SQL",
     "source": "./markdown/SQL_01_SQL_vs_NoSQL.md"
   },
   {
-    "id": "sql-02-queries",
+    "id": "SQL_02_Basic_Queries",
     "title": "SQL - Basic Queries",
     "topic": "SQL",
     "source": "./markdown/SQL_02_Basic_Queries.md"
   },
   {
-    "id": "sql-03-joins",
+    "id": "SQL_03_Joins",
     "title": "SQL - Joins",
     "topic": "SQL",
     "source": "./markdown/SQL_03_Joins.md"
   },
   {
-    "id": "sql-04-aggregations",
+    "id": "SQL_04_Aggregations",
     "title": "SQL - Aggregations",
     "topic": "SQL",
     "source": "./markdown/SQL_04_Aggregations.md"
   },
   {
-    "id": "sql-05-ctes",
+    "id": "SQL_05_CTEs",
     "title": "SQL - CTEs",
     "topic": "SQL",
     "source": "./markdown/SQL_05_CTEs.md"
   },
   {
-    "id": "sql-06-window",
+    "id": "SQL_06_Window_Functions",
     "title": "SQL - Window Functions",
     "topic": "SQL",
     "source": "./markdown/SQL_06_Window_Functions.md"
   },
   {
-    "id": "sql-07-procedures",
+    "id": "SQL_07_Stored_Procedures",
     "title": "SQL - Stored Procedures",
     "topic": "SQL",
     "source": "./markdown/SQL_07_Stored_Procedures.md"
   },
   {
-    "id": "sql-08-indexing",
+    "id": "SQL_08_Views_Indexing",
     "title": "SQL - Views & Indexing",
     "topic": "SQL",
     "source": "./markdown/SQL_08_Views_Indexing.md"
   },
   {
-    "id": "sql-09-advanced",
+    "id": "SQL_09_Advanced",
     "title": "SQL - Advanced Queries",
     "topic": "SQL",
     "source": "./markdown/SQL_09_Advanced.md"
   },
   {
-    "id": "sql-10-cheatsheet",
+    "id": "SQL_10_Cheat_Sheet",
     "title": "SQL - Cheat Sheet",
     "topic": "SQL",
     "source": "./markdown/SQL_10_Cheat_Sheet.md"
@@ -132,61 +132,61 @@ export const markdownDocuments: MarkdownDocument[] = [
 
   // === NEW: Python Study Notes ===
   {
-    "id": "python-01-intro",
+    "id": "Python_01_Intro",
     "title": "Python - Introduction",
     "topic": "Python",
     "source": "./markdown/Python_01_Intro.md"
   },
   {
-    "id": "python-02-datatypes",
+    "id": "Python_02_DataTypes",
     "title": "Python - Data Types & Variables",
     "topic": "Python",
     "source": "./markdown/Python_02_DataTypes.md"
   },
   {
-    "id": "python-03-operators",
+    "id": "Python_03_Operators",
     "title": "Python - Operators",
     "topic": "Python",
     "source": "./markdown/Python_03_Operators.md"
   },
   {
-    "id": "python-04-structures",
+    "id": "Python_04_DataStructures",
     "title": "Python - Data Structures",
     "topic": "Python",
     "source": "./markdown/Python_04_DataStructures.md"
   },
   {
-    "id": "python-05-loops",
+    "id": "Python_05_Loops",
     "title": "Python - Loops",
     "topic": "Python",
     "source": "./markdown/Python_05_Loops.md"
   },
   {
-    "id": "python-06-functions",
+    "id": "Python_06_Functions",
     "title": "Python - Functions",
     "topic": "Python",
     "source": "./markdown/Python_06_Functions.md"
   },
   {
-    "id": "python-07-lambda",
+    "id": "Python_07_Lambda_Map",
     "title": "Python - Lambda & Map",
     "topic": "Python",
     "source": "./markdown/Python_07_Lambda_Map.md"
   },
   {
-    "id": "python-08-exceptions",
+    "id": "Python_08_Exceptions",
     "title": "Python - Exception Handling",
     "topic": "Python",
     "source": "./markdown/Python_08_Exceptions.md"
   },
   {
-    "id": "python-09-decorators",
+    "id": "Python_09_Decorators",
     "title": "Python - Decorators & Generators",
     "topic": "Python",
     "source": "./markdown/Python_09_Decorators.md"
   },
   {
-    "id": "python-10-cheatsheet",
+    "id": "Python_10_Python_Cheat_Sheet",
     "title": "Python - Cheat Sheet",
     "topic": "Python",
     "source": "./markdown/Python_10_Python_Cheat_Sheet.md"
@@ -194,49 +194,49 @@ export const markdownDocuments: MarkdownDocument[] = [
 
   // === NEW: Pandas Study Notes ===
   {
-    "id": "pandas-01-series",
+    "id": "Pandas_01_Series_DataFrame",
     "title": "Pandas - Series & DataFrame",
     "topic": "Pandas",
     "source": "./markdown/Pandas_01_Series_DataFrame.md"
   },
   {
-    "id": "pandas-02-loc",
+    "id": "Pandas_02_loc_iloc",
     "title": "Pandas - loc & iloc",
     "topic": "Pandas",
     "source": "./markdown/Pandas_02_loc_iloc.md"
   },
   {
-    "id": "pandas-03-reading",
+    "id": "Pandas_03_Reading",
     "title": "Pandas - Reading Data",
     "topic": "Pandas",
     "source": "./markdown/Pandas_03_Reading.md"
   },
   {
-    "id": "pandas-04-missing",
+    "id": "Pandas_04_Missing",
     "title": "Pandas - Handling Missing Data",
     "topic": "Pandas",
     "source": "./markdown/Pandas_04_Missing.md"
   },
   {
-    "id": "pandas-05-merging",
+    "id": "Pandas_05_Merging",
     "title": "Pandas - Merging & Joining",
     "topic": "Pandas",
     "source": "./markdown/Pandas_05_Merging.md"
   },
   {
-    "id": "pandas-06-pivot",
+    "id": "Pandas_06_Pivot_JSON",
     "title": "Pandas - Pivot & JSON",
     "topic": "Pandas",
     "source": "./markdown/Pandas_06_Pivot_JSON.md"
   },
   {
-    "id": "pandas-07-etl",
+    "id": "Pandas_07_ETL_Pipeline",
     "title": "Pandas - ETL Pipeline",
     "topic": "Pandas",
     "source": "./markdown/Pandas_07_ETL_Pipeline.md"
   },
   {
-    "id": "pandas-08-cheatsheet",
+    "id": "Pandas_08_Pandas_Cheat_Sheet",
     "title": "Pandas - Cheat Sheet",
     "topic": "Pandas",
     "source": "./markdown/Pandas_08_Pandas_Cheat_Sheet.md"
@@ -244,43 +244,43 @@ export const markdownDocuments: MarkdownDocument[] = [
 
   // === NEW: AWS Study Notes ===
   {
-    "id": "aws-01-s3",
+    "id": "AWS_01_S3",
     "title": "AWS - S3",
     "topic": "AWS",
     "source": "./markdown/AWS_01_S3.md"
   },
   {
-    "id": "aws-02-glue",
+    "id": "AWS_02_Glue_EMR",
     "title": "AWS - Glue & EMR",
     "topic": "AWS",
     "source": "./markdown/AWS_02_Glue_EMR.md"
   },
   {
-    "id": "aws-03-lambda",
+    "id": "AWS_03_Lambda",
     "title": "AWS - Lambda",
     "topic": "AWS",
     "source": "./markdown/AWS_03_Lambda.md"
   },
   {
-    "id": "aws-04-redshift",
+    "id": "AWS_04_Redshift",
     "title": "AWS - Redshift & Snowflake",
     "topic": "AWS",
     "source": "./markdown/AWS_04_Redshift.md"
   },
   {
-    "id": "aws-05-airflow",
+    "id": "AWS_05_Airflow",
     "title": "AWS - Airflow",
     "topic": "AWS",
     "source": "./markdown/AWS_05_Airflow.md"
   },
   {
-    "id": "aws-06-git",
+    "id": "AWS_06_Git",
     "title": "AWS - Git/GitHub",
     "topic": "AWS",
     "source": "./markdown/AWS_06_Git.md"
   },
   {
-    "id": "aws-07-cheatsheet",
+    "id": "AWS_07_AWS_Cheat_Sheet",
     "title": "AWS - Cheat Sheet",
     "topic": "AWS",
     "source": "./markdown/AWS_07_AWS_Cheat_Sheet.md"
@@ -288,43 +288,43 @@ export const markdownDocuments: MarkdownDocument[] = [
 
   // === NEW: PySpark Study Notes ===
   {
-    "id": "pyspark-01-session",
+    "id": "PySpark_01_SparkSession",
     "title": "PySpark - Spark Session",
     "topic": "Spark",
     "source": "./markdown/PySpark_01_SparkSession.md"
   },
   {
-    "id": "pyspark-02-df",
+    "id": "PySpark_02_DataFrames",
     "title": "PySpark - DataFrames",
     "topic": "Spark",
     "source": "./markdown/PySpark_02_DataFrames.md"
   },
   {
-    "id": "pyspark-03-reading",
+    "id": "PySpark_03_Reading",
     "title": "PySpark - Reading Data",
     "topic": "Spark",
     "source": "./markdown/PySpark_03_Reading.md"
   },
   {
-    "id": "pyspark-04-transform",
+    "id": "PySpark_04_Transformations",
     "title": "PySpark - Transformations",
     "topic": "Spark",
     "source": "./markdown/PySpark_04_Transformations.md"
   },
   {
-    "id": "pyspark-05-joins",
+    "id": "PySpark_05_Joins_UDFs",
     "title": "PySpark - Joins & UDFs",
     "topic": "Spark",
     "source": "./markdown/PySpark_05_Joins_UDFs.md"
   },
   {
-    "id": "pyspark-06-optimize",
+    "id": "PySpark_06_Optimizations",
     "title": "PySpark - Optimizations",
     "topic": "Spark",
     "source": "./markdown/PySpark_06_Optimizations.md"
   },
   {
-    "id": "pyspark-07-cheatsheet",
+    "id": "PySpark_07_PySpark_Cheat_Sheet",
     "title": "PySpark - Cheat Sheet",
     "topic": "Spark",
     "source": "./markdown/PySpark_07_PySpark_Cheat_Sheet.md"

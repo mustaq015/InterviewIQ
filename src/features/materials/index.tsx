@@ -189,12 +189,34 @@ export function Materials() {
       if (editedContent) {
         setDocContent(editedContent);
       } else {
-        const response = await fetch(`/src/features/materials/markdown/${doc.id}.md`);
+        // Use source field for path, handle both relative and /pdf-materials paths
+        let docPath = doc.source;
+        
+        // For Study Notes, construct proper path from ID or use source
+        if (doc.source.startsWith('./markdown/')) {
+          docPath = doc.source.replace('./markdown/', '/src/features/materials/markdown/');
+        } else if (doc.source.startsWith('/pdf-materials/')) {
+          // This is a PDF reference - show message
+          if (doc.source.endsWith('.pdf')) {
+            setDocContent(`# ${doc.title}\n\nThis is a PDF document. Download it from: ${doc.source}\n\nPDFs are available in the Resources section.`);
+            return;
+          }
+        }
+        
+        const response = await fetch(docPath);
         if (response.ok) {
           const content = await response.text();
           setDocContent(content);
         } else {
-          setDocContent(`# ${doc.title}\n\n*Content could not be loaded. The markdown file may need to be regenerated.*\n\nTo regenerate markdown files:\n1. Open terminal in the project directory\n2. Run: \`node scripts/convert-pdfs.cjs\``);
+          // Try alternate path - use id directly with .md extension
+          const altPath = `/src/features/materials/markdown/${doc.id}.md`;
+          const altResponse = await fetch(altPath);
+          if (altResponse.ok) {
+            const content = await altResponse.text();
+            setDocContent(content);
+          } else {
+            setDocContent(`# ${doc.title}\n\n*Content could not be loaded.*`);
+          }
         }
       }
     } catch {
