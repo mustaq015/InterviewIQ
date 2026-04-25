@@ -25,11 +25,12 @@ export interface QuickNote {
 }
 
 export const predefinedResources: Resource[] = [
+  // PDF paths now relative - will work locally and in Vercel
   {
     id: 'sql-performance',
     title: 'SQL Performance Tuning Guide',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\SQL Performance Tuning.pdf',
+    url: '/pdf-materials/SQL Performance Tuning.pdf',
     topic: 'SQL',
     description: 'Comprehensive guide to SQL performance optimization'
   },
@@ -37,7 +38,7 @@ export const predefinedResources: Resource[] = [
     id: 'spark-optimization',
     title: 'Spark Optimization Techniques',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Copy of Spark Optimization Techniques.pdf',
+    url: '/pdf-materials/Copy of Spark Optimization Techniques.pdf',
     topic: 'Spark',
     description: 'Best practices for Spark performance optimization'
   },
@@ -45,7 +46,7 @@ export const predefinedResources: Resource[] = [
     id: 'pyspark-optimization',
     title: 'PySpark Optimization Scenario-based Q&A',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Pyspark optimization scenario based Q&A.pdf',
+    url: '/pdf-materials/Pyspark optimization scenario based Q&A.pdf',
     topic: 'Spark',
     description: 'Scenario-based interview questions and answers'
   },
@@ -53,7 +54,7 @@ export const predefinedResources: Resource[] = [
     id: 'pyspark-python',
     title: 'PySpark + Python Interview Guide',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Pyspark+Python.pdf',
+    url: '/pdf-materials/Pyspark+Python.pdf',
     topic: 'Python',
     description: 'Combined PySpark and Python interview preparation'
   },
@@ -61,7 +62,7 @@ export const predefinedResources: Resource[] = [
     id: 'pyspark-coding',
     title: 'PySpark Coding Interview Questions',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Pyspark Coding Interview.pdf',
+    url: '/pdf-materials/Pyspark Coding Interview.pdf',
     topic: 'Spark',
     description: 'Coding problems for PySpark interviews'
   },
@@ -69,7 +70,7 @@ export const predefinedResources: Resource[] = [
     id: 'top-sql-qa',
     title: 'Top SQL Q&A',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Top SQL Q&A.pdf',
+    url: '/pdf-materials/Top SQL Q&A.pdf',
     topic: 'SQL',
     description: 'Most frequently asked SQL interview questions'
   },
@@ -77,15 +78,15 @@ export const predefinedResources: Resource[] = [
     id: 'databricks-qa',
     title: 'Databricks Interview Q&A',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Databricks Interview Q&A set.pdf',
+    url: '/pdf-materials/Databricks Interview Q&A set.pdf',
     topic: 'Databricks',
     description: 'Databricks specific interview questions'
   },
   {
     id: 'aws-overview',
     title: 'AWS Overview',
-    type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\AWS Overview.pptx',
+    type: 'link',
+    url: '/pdf-materials/AWS Overview.pptx',
     topic: 'AWS',
     description: 'AWS services overview presentation'
   },
@@ -93,7 +94,7 @@ export const predefinedResources: Resource[] = [
     id: 'adf-databricks',
     title: 'ADF & Databricks Interview Guide',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\ADF & Databrics interview_.pdf',
+    url: '/pdf-materials/ADF & Databrics interview_.pdf',
     topic: 'Azure',
     description: 'Azure Data Factory and Databricks questions'
   },
@@ -101,7 +102,7 @@ export const predefinedResources: Resource[] = [
     id: 'azure-data-eng',
     title: 'Azure Data Engineer Q&A',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Azure Data Engineer Q&A.pdf',
+    url: '/pdf-materials/Azure Data Engineer Q&A.pdf',
     topic: 'Azure',
     description: 'Azure-specific data engineering questions'
   },
@@ -109,7 +110,7 @@ export const predefinedResources: Resource[] = [
     id: 'data-warehouse',
     title: 'Data Warehouse Concepts',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Data warehouse.pdf',
+    url: '/pdf-materials/Data warehouse.pdf',
     topic: 'Data Warehouse',
     description: 'Data warehousing fundamentals and concepts'
   },
@@ -117,7 +118,7 @@ export const predefinedResources: Resource[] = [
     id: 'dsa-interview',
     title: 'DSA Interview Guide',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\DSA interview.pdf',
+    url: '/pdf-materials/DSA interview.pdf',
     topic: 'DSA',
     description: 'Data structures and algorithms interview prep'
   },
@@ -125,7 +126,7 @@ export const predefinedResources: Resource[] = [
     id: 'amazon-de',
     title: 'Amazon Data Engineer Interview',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Amazon Data Engineer Interview Questions.pdf',
+    url: '/pdf-materials/Amazon Data Engineer Interview Questions.pdf',
     topic: 'Company',
     description: 'Amazon-specific data engineer interview questions'
   },
@@ -133,7 +134,7 @@ export const predefinedResources: Resource[] = [
     id: 'tcs-de',
     title: 'TCS Data Engineer Interview',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Data Engineer Interview Questions at TCS.pdf',
+    url: '/pdf-materials/TCS.pdf',
     topic: 'Company',
     description: 'TCS data engineer interview questions'
   },
@@ -141,7 +142,7 @@ export const predefinedResources: Resource[] = [
     id: 'quick-revision',
     title: 'Quick Revision Strategy',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Quick Revision Strategy for Data Engineering_.pdf',
+    url: '/pdf-materials/Quick Revision Strategy for Data Engineering_.pdf',
     topic: 'General',
     description: 'Quick revision strategy for data engineering'
   },
@@ -149,7 +150,7 @@ export const predefinedResources: Resource[] = [
     id: 'roadmap-2025',
     title: 'Data Engineering Roadmap 2025',
     type: 'pdf',
-    url: 'C:\\Users\\User\\Downloads\\IBrowseJobs-01\\IBrowse Jobs\\My Material\\Data Engineer Roadmap 2025.pdf',
+    url: '/pdf-materials/Data Engineer Roadmap 2025.pdf',
     topic: 'General',
     description: 'Complete data engineering career roadmap'
   }
